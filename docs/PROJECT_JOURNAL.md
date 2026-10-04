@@ -5180,3 +5180,143 @@ Experiment 061 complete.
 ### Next Direction
 
 Systematically vary which XOR examples are activated by the two new features and determine whether successful rescue is predicted by positive-class coverage, negative-class exclusion, or the combination of both.
+
+## Experiment 062 — Task Coverage Matrix
+
+### Question
+
+Which task examples must newly injected hidden features cover for rescue to become reliable?
+
+Experiment 061 showed that activation overlap alone did not explain rescue success. Experiment 062 therefore fixed the first new feature at `0010` and systematically varied the second feature across the 14 activation patterns realizable by a single affine ReLU unit on the four XOR inputs.
+
+The goal was to separate positive-class coverage, negative-class coverage, overlap, and the exact identity of the represented examples.
+
+### Setup
+
+Used the rescue configuration established in Experiments 043–061.
+
+- He initialization for the original width-2 network
+- 2 initial hidden ReLU neurons
+- one linear output neuron
+- XOR training data
+- full-batch gradient averaging
+- learning rate: 0.10
+- 4000 total training epochs
+- capacity injection at epoch 100
+- 2 additional hidden ReLU neurons
+- zero initial output weights for the new neurons
+- seeds 0–9
+- initialization offsets: 0, 1, 2, 3, 4, 5, 10, 100
+
+The first injected feature was fixed at:
+
+`0010`
+
+The second injected feature was varied across all linearly separable activation patterns realizable by a single affine ReLU unit on the four XOR inputs.
+
+Feature weight norms were matched across conditions.
+
+Each condition contained 80 seed/initialization combinations.
+
+Success was defined as final loss < 1e-6.
+
+### Results
+
+| Second feature | Combined pattern | Overlap | Union | Jaccard | Positive coverage | Negative coverage | Successful |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 0000 | 0010\|0000 | 0 | 1 | 0.000 | 1 | 0 | 56/80 |
+| 0001 | 0010\|0001 | 0 | 2 | 0.000 | 1 | 1 | 63/80 |
+| 0010 | 0010\|0010 | 1 | 1 | 1.000 | 1 | 0 | 56/80 |
+| 0011 | 0010\|0011 | 1 | 2 | 0.500 | 1 | 1 | 76/80 |
+| 0100 | 0010\|0100 | 0 | 2 | 0.000 | 2 | 0 | 80/80 |
+| 0101 | 0010\|0101 | 0 | 3 | 0.000 | 2 | 1 | 80/80 |
+| 0111 | 0010\|0111 | 1 | 3 | 0.333 | 2 | 1 | 64/80 |
+| 1000 | 0010\|1000 | 0 | 2 | 0.000 | 1 | 1 | 64/80 |
+| 1010 | 0010\|1010 | 1 | 2 | 0.500 | 1 | 1 | 64/80 |
+| 1011 | 0010\|1011 | 1 | 3 | 0.333 | 1 | 2 | 80/80 |
+| 1100 | 0010\|1100 | 0 | 3 | 0.000 | 2 | 1 | 64/80 |
+| 1101 | 0010\|1101 | 0 | 4 | 0.000 | 2 | 2 | 80/80 |
+| 1110 | 0010\|1110 | 1 | 3 | 0.333 | 2 | 1 | 64/80 |
+| 1111 | 0010\|1111 | 1 | 4 | 0.250 | 2 | 2 | 80/80 |
+
+### Observation
+
+The strongest result is that positive-class coverage is important, but it is not sufficient by itself.
+
+Features covering both positive XOR examples sometimes produced perfect rescue:
+
+- `0010|0100` → 80/80
+- `0010|0101` → 80/80
+- `0010|1101` → 80/80
+- `0010|1111` → 80/80
+
+However, other conditions that also covered both positive examples were less reliable:
+
+- `0010|0111` → 64/80
+- `0010|1100` → 64/80
+- `0010|1110` → 64/80
+
+Therefore, simply covering both positive examples does not guarantee rescue.
+
+Likewise, covering only one positive example does not always fail:
+
+- `0010|0011` → 76/80
+- `0010|1011` → 80/80
+
+This means positive-class coverage is informative, but not a complete explanation.
+
+### Interpretation
+
+Experiment 062 rules out a simple task-coverage rule such as:
+
+> Rescue succeeds whenever both positive XOR examples are represented.
+
+It also rules out the idea that negative-class coverage is simply harmful. Some successful conditions included one or two negative examples:
+
+- `0010|0101` → 80/80
+- `0010|1011` → 80/80
+- `0010|1101` → 80/80
+- `0010|1111` → 80/80
+
+The exact identity of the examples represented by a feature pair matters, but the binary activation pattern still does not fully predict the outcome.
+
+An important remaining variable is the magnitude of the activations, not just whether they are zero or nonzero.
+
+Two feature pairs can have similar binary task coverage while producing different activation values and different optimization dynamics.
+
+The successful and failed conditions therefore suggest that rescue depends on both:
+
+- which training examples the new features respond to
+- how strongly they respond to those examples
+
+### Lesson
+
+Feature complementarity is a task-dependent representation property rather than a simple overlap score or binary coverage count.
+
+For XOR, knowing that a feature is active on an example is not enough. The magnitude of the feature response may determine whether the newly injected representation provides a sufficiently useful optimization direction.
+
+The investigation should therefore move from binary activation patterns to activation margins and feature strength.
+
+### Important Understanding
+
+The investigation has progressed through three levels:
+
+1. Are the new features different?
+2. Which XOR examples do the new features represent?
+3. How strongly do the new features represent those examples?
+
+Experiment 061 addressed the first question.
+
+Experiment 062 addressed the second question.
+
+The next experiment should isolate the third.
+
+### Status
+
+Experiment 062 complete.
+
+### Next Direction
+
+Experiment 063 should hold the binary activation pattern fixed while systematically varying the activation magnitude or margin of the injected features.
+
+The goal is to determine whether rescue reliability changes continuously with feature strength and whether a minimum useful activation margin exists.
