@@ -5904,3 +5904,199 @@ Experiment 066 complete.
 The next experiment should investigate which measurable property of feature structure predicts the performance ceiling most precisely.
 
 Candidates include feature rank, target alignment, negative-example contamination, and the geometry of the represented outputs.
+
+## Experiment 067 — Representation vs. Optimization
+
+### Question
+
+When a rescue succeeds or fails, is the limiting factor the representation itself, or the ability of gradient descent to exploit that representation?
+
+Experiment 066 showed that stronger features and longer training could not fully overcome structurally weaker feature pairs. Experiment 067 measures the representational capacity available immediately at injection, before the newly added output weights are trained.
+
+### Setup
+
+The same three structures from Experiment 066 were tested:
+
+- `0010|0100` — complementary
+- `0010|0111` — partial overlap
+- `0010|0010` — redundant
+
+Feature strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+For every run, the hidden representation at the injection point was held fixed and an analytic best linear output readout was calculated.
+
+The readout included an intercept and the available hidden activations.
+
+This produces a representation-capacity measurement independent of the network's gradient-descent path.
+
+The same run was then trained for 3900 post-injection updates.
+
+There were 80 runs for each structure/strength combination.
+
+Success was defined as loss < `1e-6`.
+
+### Definitions
+
+**Readout success** means the fixed hidden representation at injection could already fit XOR with a linear output layer.
+
+**Readout → fail** means the representation could already fit XOR, but ordinary training did not reach the success threshold.
+
+**New solution** means the representation could not initially fit XOR with a linear readout, but training changed the hidden representation enough for the final network to succeed.
+
+### Results
+
+#### `0010|0100` — complementary
+
+| Strength | Readout | Final | Readout → Fail | New Solution |
+|---:|---:|---:|---:|---:|
+| 0.001 | 80/80 | 80/80 | 0 | 0 |
+| 0.010 | 80/80 | 80/80 | 0 | 0 |
+| 0.100 | 80/80 | 80/80 | 0 | 0 |
+| 1.000 | 80/80 | 80/80 | 0 | 0 |
+| 4.000 | 80/80 | 80/80 | 0 | 0 |
+
+The complementary structure was already linearly sufficient in every run at injection.
+
+Every one of those runs also successfully trained.
+
+#### `0010|0111` — partial overlap
+
+| Strength | Readout | Final | Readout → Fail | New Solution |
+|---:|---:|---:|---:|---:|
+| 0.001 | 64/80 | 55/80 | 16 | 7 |
+| 0.010 | 64/80 | 48/80 | 16 | 0 |
+| 0.100 | 64/80 | 55/80 | 9 | 0 |
+| 1.000 | 64/80 | 56/80 | 8 | 0 |
+| 4.000 | 64/80 | 63/80 | 1 | 0 |
+
+The representation was immediately sufficient in 64/80 runs regardless of strength.
+
+Increasing strength improved the ability of training to exploit that representation, but did not change the initial representational count.
+
+At strength `4.0`, only one run had a sufficient representation at injection but failed to reach the final success threshold.
+
+At strength `0.001`, 7 runs created a successful representation during training even though their initial representation was insufficient.
+
+#### `0010|0010` — redundant
+
+| Strength | Readout | Final | Readout → Fail | New Solution |
+|---:|---:|---:|---:|---:|
+| 0.001 | 48/80 | 48/80 | 0 | 0 |
+| 0.010 | 48/80 | 48/80 | 0 | 0 |
+| 0.100 | 48/80 | 55/80 | 0 | 7 |
+| 1.000 | 48/80 | 56/80 | 0 | 8 |
+| 4.000 | 48/80 | 56/80 | 0 | 8 |
+
+The redundant structure was immediately sufficient in only 48/80 runs.
+
+Unlike the complementary structure, increasing feature strength did not improve the initial representational capacity.
+
+Training did create new successful representations in some cases at higher strengths, but the final ceiling remained 56/80.
+
+### Observation
+
+The strongest result is that the initial readout counts were determined by feature structure rather than feature strength.
+
+For `0010|0100`:
+
+- readout success remained 80/80 at every strength.
+
+For `0010|0111`:
+
+- readout success remained 64/80 at every strength.
+
+For `0010|0010`:
+
+- readout success remained 48/80 at every strength.
+
+This is expected because positive scaling changes feature magnitude without changing the underlying activation pattern. The representational geometry at the pattern level therefore remains unchanged, while optimization speed can still change substantially.
+
+### Representation vs. Optimization
+
+Experiment 067 separates two different failure modes.
+
+**Representational failure**
+
+A subset of runs begins with a hidden representation that cannot linearly realize XOR.
+
+Examples:
+
+- `0010|0111`: 16/80 runs initially insufficient
+- `0010|0010`: 32/80 runs initially insufficient
+
+Additional training can sometimes create a new representation, but not reliably enough to reach the complementary structure's performance.
+
+**Optimization failure**
+
+A run can begin with a representation that is already sufficient, yet training can still fail.
+
+This occurred most clearly for `0010|0111`.
+
+At strength `0.001`, 64 runs had a sufficient representation at injection, but 16 of those did not reach final success.
+
+At strength `4.0`, only 1 such run failed.
+
+This demonstrates that having the right representation does not automatically guarantee that gradient descent will exploit it successfully.
+
+### Important Result
+
+The experiment produces a useful decomposition:
+
+**Representation determines what solution is available.**
+
+**Optimization determines whether training reaches that solution.**
+
+For the complementary structure, both conditions were satisfied in every run.
+
+For the partial-overlap structure, some runs had sufficient representation but still failed optimization.
+
+For the redundant structure, the initial representation was insufficient in many runs, and training could only create new successful representations in a limited subset.
+
+### Interpretation
+
+Experiments 065 and 066 showed that strength and training budget influence convergence, but structure can impose a final ceiling.
+
+Experiment 067 now shows why.
+
+Feature strength does not fundamentally change the binary structure of a positive ReLU feature. It scales the available activations, but does not create new activation patterns.
+
+Therefore:
+
+- structure changes representational capacity
+- strength changes optimization dynamics
+- training budget gives optimization more opportunity to exploit the representation
+
+A stronger feature can make an existing useful representation easier to learn from, but it does not automatically make a poor representation expressive enough.
+
+### Lesson
+
+A neural network can fail for two very different reasons.
+
+It can fail because the available representation cannot express the target sufficiently.
+
+Or it can fail because the representation is sufficient, but optimization does not find the correct output parameters.
+
+Those failure modes should not be treated as the same problem.
+
+### Important Understanding
+
+The investigation now supports a four-stage picture:
+
+1. **Feature structure** determines the representational possibilities.
+2. **Feature strength** determines how strongly those possibilities influence gradients.
+3. **Training budget** determines how much time optimization has to exploit them.
+4. **Optimization trajectory** determines whether a sufficient representation actually becomes a successful trained solution.
+
+Experiment 067 provides a direct measurement separating the first and fourth stages.
+
+### Status
+
+Experiment 067 complete.
+
+### Next Direction
+
+The next experiment should measure how the hidden representation changes during training in runs that begin representation-sufficient versus representation-insufficient.
+
+The goal is to determine whether successful training mainly preserves an already-good representation, refines it, or constructs a substantially different one.
