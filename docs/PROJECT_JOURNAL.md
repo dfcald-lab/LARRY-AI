@@ -7043,3 +7043,326 @@ Measure:
 The central question is:
 
 > **How does output-layer initialization control whether optimization preserves, damages, or constructs the hidden representation?**
+
+## Experiment 071 — Output Initialization
+
+### Question
+
+How does the output-readout state present immediately after feature injection control subsequent hidden-representation learning?
+
+Experiments 069 and 070 showed that the output state can influence whether hidden representation movement occurs.
+
+Experiment 071 varied the output state continuously between:
+
+* the actual output state learned before injection
+* the analytically optimal output readout for the post-injection representation
+
+The goal was to determine whether output initialization produces a smooth change in learning behavior.
+
+### Setup
+
+The experiment used the same three feature structures:
+
+* `0010|0100` — complementary
+* `0010|0111` — partial overlap
+* `0010|0010` — redundant
+
+Feature strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+Output interpolation values:
+
+`α = 0`, `0.25`, `0.50`, `0.75`, `1.00`
+
+The interpolation was:
+
+`output(α) = original_output + α × (analytic_output - original_output)`
+
+Therefore:
+
+* `α=0` preserved the actual output state at injection
+* `α=1` replaced it with the analytic best readout
+* intermediate values interpolated between those two complete output states
+
+Each condition contained:
+
+* 10 seeds
+* 8 initialization offsets
+* 80 runs
+
+Total:
+
+`15 structure/strength conditions × 5 α values × 80 runs = 6000 runs`
+
+Success threshold:
+
+`loss < 1e-6`
+
+### Important Endpoint Verification
+
+The α=0 endpoint reproduced ordinary post-injection training.
+
+The α=1 endpoint reproduced the analytic-readout initialization condition used in the controlled Experiment 070 run.
+
+This connects 071 directly to Experiments 069 and 070.
+
+---
+
+### Results — Complementary `0010|0100`
+
+The most striking result occurred at weak feature strength.
+
+For strength `0.001`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 78/80 |
+| 0.25 | 0/80 |
+| 0.50 | 0/80 |
+| 0.75 | 0/80 |
+| 1.00 | 78/80 |
+
+The intermediate states were dramatically worse than either endpoint.
+
+At α values `0.25–0.75`, mean final loss was approximately `0.47–0.50` and mean feature cosine fell to approximately `0.125–0.194`.
+
+The representation therefore moved much farther from the useful injection state.
+
+At strength `1.0`, however, every α condition succeeded:
+
+`80/80`
+
+At strength `4.0`, α=0, 0.25, and 1.0 all reached `80/80`, while α=0.5 and 0.75 reached `72/80` and `75/80`.
+
+### Observation
+
+The output initialization effect is not monotonic.
+
+Intermediate output states can be substantially worse than either endpoint.
+
+---
+
+### Results — Partial-Overlap `0010|0111`
+
+At strength `0.001`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 55/80 |
+| 0.25 | 0/80 |
+| 0.50 | 0/80 |
+| 0.75 | 0/80 |
+| 1.00 | 27/80 |
+
+The intermediate conditions again produced severe representation degradation.
+
+Mean feature cosine was approximately:
+
+`0.226 → 0.225 → 0.200`
+
+for α values `0.25`, `0.50`, and `0.75`.
+
+Mean pattern Hamming distance reached approximately `7.3–7.4`.
+
+At strength `0.01`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 48/80 |
+| 0.25 | 7/80 |
+| 0.50 | 6/80 |
+| 0.75 | 5/80 |
+| 1.00 | 26/80 |
+
+At strength `0.1`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 55/80 |
+| 0.25 | 42/80 |
+| 0.50 | 26/80 |
+| 0.75 | 17/80 |
+| 1.00 | 28/80 |
+
+At strength `1.0` the effect became smaller:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 56/80 |
+| 0.25 | 56/80 |
+| 0.50 | 54/80 |
+| 0.75 | 54/80 |
+| 1.00 | 51/80 |
+
+At strength `4.0`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 63/80 |
+| 0.25 | 55/80 |
+| 0.50 | 55/80 |
+| 0.75 | 55/80 |
+| 1.00 | 57/80 |
+
+### Interpretation
+
+Weak injected features are especially sensitive to output initialization.
+
+Stronger features reduce the severity of the effect.
+
+However, there is no simple rule that moving closer to the analytic readout improves success.
+
+---
+
+### Results — Redundant `0010|0010`
+
+At strength `0.001`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 48/80 |
+| 0.25 | 0/80 |
+| 0.50 | 0/80 |
+| 0.75 | 0/80 |
+| 1.00 | 35/80 |
+
+At strength `0.01`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 48/80 |
+| 0.25 | 1/80 |
+| 0.50 | 0/80 |
+| 0.75 | 0/80 |
+| 1.00 | 28/80 |
+
+At strength `0.1`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 55/80 |
+| 0.25 | 45/80 |
+| 0.50 | 40/80 |
+| 0.75 | 40/80 |
+| 1.00 | 35/80 |
+
+At strength `1.0`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 56/80 |
+| 0.25 | 48/80 |
+| 0.50 | 46/80 |
+| 0.75 | 40/80 |
+| 1.00 | 40/80 |
+
+At strength `4.0`:
+
+| α | Final success |
+| ---: | ---: |
+| 0.00 | 56/80 |
+| 0.25 | 48/80 |
+| 0.50 | 48/80 |
+| 0.75 | 40/80 |
+| 1.00 | 40/80 |
+
+### Major Findings
+
+Experiment 071 establishes that output initialization has a strong effect on hidden-representation trajectories.
+
+**1. The effect is not monotonic.**
+
+Intermediate output states can be worse than both endpoints.
+
+**2. Weak features are most sensitive.**
+
+At low feature strengths, partial and redundant structures can collapse almost completely under intermediate output initialization.
+
+**3. Output initialization changes representation movement.**
+
+The catastrophic intermediate cases often showed much lower feature cosine and much larger activation-pattern changes.
+
+**4. The output layer is part of the representation-learning mechanism.**
+
+The output state determines the error signal that is propagated into the hidden layer.
+
+Therefore the output layer cannot be treated as an independent downstream component.
+
+### Important Methodological Limitation
+
+The α interpolation changed the complete output state:
+
+* old hidden-neuron output weights
+* newly injected-neuron output weights
+* output bias
+
+Therefore the experiment does not yet isolate the effect of coupling the new features to the output layer.
+
+Changing the old output readout may itself disrupt the representation learned before injection.
+
+This is especially important because the original output state already contains information learned during the first 100 epochs.
+
+### Important Understanding
+
+Experiments 069–071 now show:
+
+**Experiment 069**
+
+Preserving a useful representation can prevent some optimization failures.
+
+**Experiment 070**
+
+Penalizing all representation movement is not sufficient because useful movement can also be necessary.
+
+**Experiment 071**
+
+The output state that drives hidden gradients can radically alter the representation trajectory.
+
+The emerging picture is:
+
+> Representation learning depends on the interaction between the hidden state and the output state that generates its gradient signal.
+
+### Conclusion
+
+Experiment 071 shows that output initialization is a major control variable for hidden-representation learning.
+
+However, the complete-output interpolation used here mixes two different effects:
+
+`changing the readout of the old representation`
+
+and
+
+`changing the readout coupling of the newly injected features`
+
+Those effects must be separated before drawing a stronger conclusion.
+
+### Status
+
+**Experiment 071 complete.**
+
+The result is considered a valid exploratory experiment, with the complete-output interpolation limitation documented above.
+
+### Next Direction
+
+Experiment 072 should isolate the newly injected features.
+
+At injection:
+
+* keep the original output weights unchanged
+* keep the original output bias unchanged
+* vary only the two output weights connected to the newly injected neurons
+
+Set the new output weights to:
+
+`β × analytic_new_feature_weights`
+
+for:
+
+`β = 0`, `0.1`, `0.25`, `0.50`, `0.75`, `1.0`
+
+This tests whether the amount of direct output coupling given to a newly injected feature controls whether that feature participates in representation learning.
+
+The central question becomes:
+
+> **When a new feature is injected, how much output coupling does it need before it can meaningfully influence hidden-layer optimization?**
