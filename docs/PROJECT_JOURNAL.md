@@ -5750,3 +5750,157 @@ Experiment 065 complete.
 ### Next Direction
 
 The next experiments should test whether the same strength-versus-budget relationship holds when the injected features are less ideal than the fixed `0010|0100` pair, and whether feature quality, feature strength, and optimization time interact.
+
+## Experiment 066 — Structure × Strength × Training Budget
+
+### Question
+
+Can additional training time compensate for weaker feature structure, in the same way that it can compensate for weak feature strength?
+
+Experiment 065 showed that extremely weak but useful features can eventually converge when given enough optimization time. Experiment 066 tests whether additional training can similarly overcome structurally weaker feature pairs.
+
+### Setup
+
+Three fixed feature structures were tested:
+
+- `0010|0100` — complementary baseline
+- `0010|0111` — partial-overlap structure
+- `0010|0010` — redundant structure
+
+Feature strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+Post-injection training budgets:
+
+`500`, `1000`, `2000`, `3900` updates
+
+All other conditions remained fixed:
+
+- width 2 before injection
+- 2 hidden neurons added at epoch 100
+- He initialization
+- full-batch training
+- learning rate `0.10`
+- seeds `0–9`
+- initialization offsets `[0, 1, 2, 3, 4, 5, 10, 100]`
+- new output weights initialized to zero
+- success threshold: loss < `1e-6`
+
+Each structure/strength/seed/initialization combination was trained once through 3900 updates, with losses recorded at each budget.
+
+### Results
+
+#### `0010|0100` — complementary
+
+| Strength | 500 | 1000 | 2000 | 3900 |
+|---:|---:|---:|---:|---:|
+| 0.001 | 0/80 | 0/80 | 80/80 | 80/80 |
+| 0.010 | 0/80 | 54/80 | 80/80 | 80/80 |
+| 0.100 | 0/80 | 71/80 | 80/80 | 80/80 |
+| 1.000 | 45/80 | 80/80 | 80/80 | 80/80 |
+| 4.000 | 64/80 | 74/80 | 80/80 | 80/80 |
+
+#### `0010|0111` — partial overlap
+
+| Strength | 500 | 1000 | 2000 | 3900 |
+|---:|---:|---:|---:|---:|
+| 0.001 | 0/80 | 0/80 | 55/80 | 55/80 |
+| 0.010 | 0/80 | 23/80 | 48/80 | 48/80 |
+| 0.100 | 0/80 | 38/80 | 55/80 | 55/80 |
+| 1.000 | 6/80 | 55/80 | 56/80 | 56/80 |
+| 4.000 | 44/80 | 57/80 | 63/80 | 63/80 |
+
+#### `0010|0010` — redundant
+
+| Strength | 500 | 1000 | 2000 | 3900 |
+|---:|---:|---:|---:|---:|
+| 0.001 | 0/80 | 1/80 | 48/80 | 48/80 |
+| 0.010 | 0/80 | 24/80 | 48/80 | 48/80 |
+| 0.100 | 0/80 | 34/80 | 55/80 | 55/80 |
+| 1.000 | 18/80 | 45/80 | 56/80 | 56/80 |
+| 4.000 | 34/80 | 48/80 | 56/80 | 56/80 |
+
+### Observation
+
+The complementary structure was the only structure that eventually reached 80/80 at every tested feature strength.
+
+The partial-overlap structure reached a maximum of 63/80.
+
+The redundant structure reached a maximum of 56/80.
+
+Most importantly, the weaker structures showed little or no improvement between 2000 and 3900 updates. Additional training time helped them optimize, but did not remove their final performance ceiling.
+
+### Mean Loss
+
+The complementary structure converged to approximately zero loss.
+
+The partial-overlap structure plateaued at nonzero mean loss:
+
+- strength `0.001`: `0.078125000`
+- strength `0.010`: `0.100000000`
+- strength `0.100`: `0.078125000`
+- strength `1.000`: `0.075000000`
+- strength `4.000`: `0.053125000`
+
+The redundant structure also plateaued:
+
+- strength `0.001`: `0.116666667`
+- strength `0.010`: `0.116666667`
+- strength `0.100`: `0.094791667`
+- strength `1.000`: `0.091666667`
+- strength `4.000`: `0.091666667`
+
+### Interpretation
+
+Experiment 066 establishes a boundary on what training time can compensate for.
+
+Experiment 065 showed that weak versions of a useful feature pair can eventually reach the desired solution when given enough optimization time.
+
+Experiment 066 shows that this does not hold for structurally inadequate feature pairs.
+
+For the complementary `0010|0100` structure, strength and training budget mainly affected convergence speed.
+
+For `0010|0111` and `0010|0010`, increasing strength and training budget improved results at intermediate checkpoints, but the network eventually reached structure-dependent ceilings.
+
+The strongest complementary condition reached 80/80.
+
+The strongest partial-overlap condition reached only 63/80.
+
+The strongest redundant condition reached only 56/80.
+
+A stronger version of a poor representation therefore remains limited by the representation itself.
+
+### Lesson
+
+The hierarchy from the previous experiments is becoming clearer:
+
+1. **Feature structure** determines the available representational directions and can impose a hard performance ceiling.
+2. **Feature strength** determines how quickly those directions influence optimization.
+3. **Training budget** determines how much time optimization has to exploit the available directions.
+
+Strength and training time can compensate for weak magnitude.
+
+They cannot reliably compensate for missing or redundant structure.
+
+### Important Understanding
+
+Experiments 059–062 established that complementary feature structure is strongly associated with successful rescue.
+
+Experiments 063–064 showed that feature strength primarily affects convergence speed within a useful structure.
+
+Experiment 065 showed that additional training can compensate for extremely weak but useful features.
+
+Experiment 066 shows the opposite boundary: additional training cannot fully compensate for structurally inadequate features.
+
+This suggests that representational quality comes before optimization efficiency. A useful direction must exist before strength and training time can exploit it.
+
+### Status
+
+Experiment 066 complete.
+
+### Next Direction
+
+The next experiment should investigate which measurable property of feature structure predicts the performance ceiling most precisely.
+
+Candidates include feature rank, target alignment, negative-example contamination, and the geometry of the represented outputs.
