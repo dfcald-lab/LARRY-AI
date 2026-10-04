@@ -6100,3 +6100,567 @@ Experiment 067 complete.
 The next experiment should measure how the hidden representation changes during training in runs that begin representation-sufficient versus representation-insufficient.
 
 The goal is to determine whether successful training mainly preserves an already-good representation, refines it, or constructs a substantially different one.
+
+## Experiment 068 — Representation Trajectory
+
+### Question
+
+When a rescue succeeds or fails, does training preserve an already-useful hidden representation, refine it, or construct a new useful representation?
+
+Experiment 067 showed that representation sufficiency and optimization success are not identical. Some runs began with a hidden representation that could already solve XOR with an optimal linear readout but still failed under ordinary training.
+
+Experiment 068 therefore measured the hidden representation repeatedly during post-injection training.
+
+The goal was to determine whether successful and failed trajectories follow different representational paths.
+
+### Setup
+
+Used the same three feature structures from Experiments 063–067:
+
+* `0010|0100` — complementary
+* `0010|0111` — partial overlap
+* `0010|0010` — redundant
+
+Feature strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+Training conditions remained:
+
+* width 2 before injection
+* 2 hidden neurons added at epoch 100
+* He initialization for the original network
+* full-batch training
+* learning rate `0.10`
+* 4000 total training epochs
+* 3900 post-injection updates
+* seeds `0–9`
+* initialization offsets `[0, 1, 2, 3, 4, 5, 10, 100]`
+* zero initial output weights for injected neurons
+* success threshold: loss < `1e-6`
+
+There were:
+
+* 10 seeds × 8 initialization offsets = 80 runs per condition
+* 15 structure/strength conditions
+* 1200 total runs
+
+### Representation Measurements
+
+The hidden representation was measured at post-injection steps:
+
+`0, 1, 5, 20, 100, 500, 1000, 2000, 3900`
+
+At each checkpoint, the experiment measured:
+
+* best possible analytic linear readout loss
+* cosine similarity between the injection-time and current hidden activation vectors
+* number of hidden features whose binary activation pattern changed
+* total binary activation-pattern Hamming distance
+
+The readout measurement asks:
+
+> Could the current hidden representation solve XOR if the output layer were chosen optimally?
+
+The cosine and pattern measurements ask:
+
+> How much has the representation moved away from the representation present at injection?
+
+The representation measurements include the full hidden layer, not only the two injected neurons.
+
+### Outcome Groups
+
+Runs were separated into four categories:
+
+* **S→S** — representation initially sufficient and final training successful
+* **S→F** — representation initially sufficient but final training failed
+* **I→S** — representation initially insufficient but training constructed a sufficient representation
+* **I→F** — representation initially insufficient and final training failed
+
+This separates representational limitations from optimization failures.
+
+---
+
+### Results — Complementary `0010|0100`
+
+All five strength conditions produced:
+
+**80/80 S→S**
+
+There were:
+
+* 0 S→F
+* 0 I→S
+* 0 I→F
+
+The representation was already linearly sufficient at injection for every run.
+
+The representation nevertheless changed during optimization.
+
+At strength `0.001`:
+
+* mean feature cosine: `1.000000 → 0.948371`
+* final mean pattern changes: approximately `1.9`
+* final mean pattern Hamming distance: approximately `2.06`
+
+At strength `4.0`:
+
+* mean feature cosine: `1.000000 → 0.997430`
+* final mean pattern changes: approximately `0.425`
+* final mean pattern Hamming distance: approximately `0.425`
+
+Thus, weak useful features allowed substantially more representational movement, while stronger useful features produced a more stable trajectory.
+
+Despite this movement, all complementary runs retained or recovered a linearly sufficient representation and reached zero loss.
+
+### Interpretation
+
+A successful representation does not have to remain identical.
+
+Optimization can refine a useful representation while preserving enough structure to solve the task.
+
+Feature strength appears to influence how much the representation moves while maintaining success.
+
+---
+
+### Results — Partial-Overlap `0010|0111`
+
+The outcome depended strongly on feature strength.
+
+| Strength | S→S | S→F | I→S | I→F |
+| -------: | --: | --: | --: | --: |
+|  `0.001` |  48 |  16 |   7 |   9 |
+|  `0.010` |  48 |  16 |   0 |  16 |
+|  `0.100` |  55 |   9 |   0 |  16 |
+|  `1.000` |  56 |   8 |   0 |  16 |
+|  `4.000` |  63 |   1 |   0 |  16 |
+
+The most important result is the existence of **S→F** trajectories.
+
+For example, at strength `0.001`, 16 runs began with:
+
+`readout_loss = 0`
+
+but eventually reached:
+
+`readout_loss = 0.25`
+
+while the network failed to solve XOR.
+
+The hidden representation moved substantially during these failures.
+
+At strength `0.001`, the S→F group ended with:
+
+* mean feature cosine ≈ `0.8765`
+* approximately `3` hidden features changed binary pattern
+* approximately `4` total pattern-bit changes
+
+At strength `4.0`, only one S→F case remained, and its final representation still moved substantially.
+
+### Interpretation
+
+This provides direct evidence that a network can begin with an adequate representation and then move into an inadequate one during ordinary optimization.
+
+Therefore:
+
+> Representation sufficiency at initialization does not guarantee a successful training trajectory.
+
+Optimization can destroy a representation that was already capable of solving the task.
+
+Feature strength reduced the frequency of this failure, making the initially sufficient representation easier for training to preserve or exploit.
+
+---
+
+### Results — Representation Construction
+
+The strongest direct evidence for representation construction occurred in the partial-overlap condition at strength `0.001`.
+
+Seven runs began representation-insufficient:
+
+`readout_loss ≈ 0.321428571`
+
+but eventually became linearly sufficient.
+
+Their trajectory was approximately:
+
+`0.321 → 0.267 → 0.252 → 0.0278 → 0`
+
+The seven successful cases reached representation sufficiency at:
+
+* 1 run by step 1000
+* 6 runs by step 2000
+
+Representation change accompanied this transition.
+
+At step 3900:
+
+* mean feature cosine ≈ `0.9039`
+* mean pattern changes ≈ `1.0`
+* mean Hamming distance ≈ `2.0`
+
+### Interpretation
+
+Training can construct a representation that was not initially capable of solving the task.
+
+This is genuine representational change rather than merely output-layer optimization.
+
+The network first lacked a linearly sufficient hidden representation, then changed its hidden features until a linear readout became sufficient.
+
+---
+
+### Results — Redundant `0010|0010`
+
+The redundant condition showed no S→F cases.
+
+| Strength | S→S | S→F | I→S | I→F |
+| -------: | --: | --: | --: | --: |
+|  `0.001` |  48 |   0 |   0 |  32 |
+|  `0.010` |  48 |   0 |   0 |  32 |
+|  `0.100` |  48 |   0 |   7 |  25 |
+|  `1.000` |  48 |   0 |   8 |  24 |
+|  `4.000` |  48 |   0 |   8 |  24 |
+
+The redundant structure began with a sufficient representation in exactly 48/80 cases at every strength.
+
+At higher strengths, training sometimes constructed a sufficient representation:
+
+* strength `0.1`: 7 I→S
+* strength `1.0`: 8 I→S
+* strength `4.0`: 8 I→S
+
+However, the remaining insufficient cases stayed at nonzero readout loss.
+
+This matches the structure-dependent ceiling observed in Experiment 066.
+
+### Interpretation
+
+The redundant structure can sometimes be improved by training, but optimization does not consistently create the complementary structure needed for complete rescue.
+
+Training can search for a better representation, but the trajectory may remain trapped in an insufficient structural configuration.
+
+---
+
+### Major Findings
+
+Experiment 068 establishes four important behaviors.
+
+**1. Successful optimization can refine a sufficient representation.**
+
+The complementary `0010|0100` runs changed substantially in some conditions but remained capable of solving XOR.
+
+**2. Optimization can destroy a sufficient representation.**
+
+The partial-overlap S→F cases began with a perfect analytic readout but ended with an insufficient representation and final loss near `0.25`.
+
+**3. Optimization can construct a sufficient representation.**
+
+The partial-overlap and redundant I→S cases began with insufficient representations and eventually developed representations with zero analytic readout loss.
+
+**4. Some trajectories never construct enough structure.**
+
+The I→F cases changed somewhat but settled into nonzero representation loss, consistent with a structure-dependent performance ceiling.
+
+---
+
+### Important Understanding
+
+Experiment 067 established that representation and optimization are distinct.
+
+Experiment 068 shows that the representation itself is dynamic.
+
+The hidden representation is not simply a fixed substrate on which the output layer learns.
+
+During optimization, the network can:
+
+**preserve → refine → damage → reconstruct**
+
+its internal representation.
+
+This leads to a more precise picture:
+
+1. Feature structure determines the representational possibilities available to the network.
+2. Feature strength influences how strongly those representations participate in optimization.
+3. Optimization moves the hidden representation through parameter space.
+4. That movement can improve representational sufficiency.
+5. The same movement can also destroy representational sufficiency.
+6. Training success therefore depends not only on whether a good representation exists, but on whether optimization follows a trajectory that preserves or reaches it.
+
+### Conclusion
+
+Experiment 068 provides the strongest evidence so far that representation and optimization are coupled dynamically rather than being independent stages.
+
+A network can fail because:
+
+* the representation is initially insufficient,
+* optimization fails to construct a sufficient representation,
+* or optimization moves an initially sufficient representation into an insufficient one.
+
+The last case is especially important because it demonstrates that optimization itself can create failure even when the required representation is already present.
+
+The complementary structure avoided all of these failure modes in the tested conditions.
+
+### Status
+
+**Experiment 068 complete.**
+
+### Next Direction
+
+Experiment 069 should intervene directly on representation movement.
+
+At injection, split the network into two identical trajectories:
+
+* **normal training:** continue updating hidden and output parameters
+* **frozen counterfactual:** preserve the exact injection-time hidden representation and assign the analytically optimal linear output readout
+
+The frozen condition removes output-layer optimization as a confounding factor.
+
+The central question is:
+
+> When an initially sufficient representation exists, does preventing hidden-representation drift prevent the S→F failure?
+
+A successful frozen counterfactual would show that the representation present at injection remained sufficient and that normal hidden-layer movement contributed to the failure.
+
+## Experiment 069 — Frozen Representation
+
+### Question
+
+Does hidden-representation drift cause training failure when a sufficient representation already exists?
+
+Experiment 068 showed that hidden representations are dynamic.
+
+Some trajectories began with representations that were already sufficient to solve XOR but later lost that property.
+
+Other trajectories began with insufficient representations and later constructed sufficient ones.
+
+Experiment 069 directly intervened on representation movement to determine whether this drift contributes causally to optimization failure.
+
+### Methodological Correction
+
+The first version of Experiment 069 froze the hidden layer but still attempted to train the output layer from its original zero initialization.
+
+This introduced a confounding factor.
+
+A frozen representation could have zero analytic readout loss while ordinary gradient descent still failed to discover the required output weights.
+
+Therefore, that version could not cleanly test whether representation drift itself caused failure.
+
+The experiment was corrected.
+
+The corrected frozen condition uses the **analytic best linear output readout available at injection**.
+
+This removes output-layer optimization from the frozen comparison.
+
+### Setup
+
+After epoch 100 and injection of the two new hidden neurons, the exact same network state is copied into two trajectories.
+
+#### Normal trajectory
+
+The hidden and output layers continue ordinary gradient-descent training.
+
+#### Frozen counterfactual
+
+The hidden representation is held exactly at its injection state.
+
+The output layer is immediately assigned the analytically optimal linear readout for that representation.
+
+The frozen branch therefore answers:
+
+> What would happen if the hidden representation present at injection were preserved perfectly and the output layer were given the best possible solution?
+
+The remaining conditions are unchanged:
+
+- width 2 before injection
+- 2 hidden neurons added at epoch 100
+- He initialization
+- XOR training data
+- full-batch training
+- learning rate `0.10`
+- 4000 total training epochs
+- 3900 post-injection updates
+- seeds `0–9`
+- initialization offsets `[0, 1, 2, 3, 4, 5, 10, 100]`
+- success threshold: loss < `1e-6`
+
+Feature structures:
+
+- `0010|0100` — complementary
+- `0010|0111` — partial overlap
+- `0010|0010` — redundant
+
+Feature strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+Each condition contained 80 seed/initialization combinations.
+
+### Key Measurement
+
+The most important value is:
+
+**normal_failed → frozen_success**
+
+This means:
+
+- the representation was already sufficient at injection
+- normal training failed
+- the identical injection representation remained solvable when hidden drift was prevented
+
+This provides a causal test of representation drift.
+
+### Results — Complementary `0010|0100`
+
+All five strengths produced:
+
+| Strength | Initially sufficient | Normal success | Frozen success | Normal failed → frozen success |
+|---:|---:|---:|---:|---:|
+| 0.001 | 80/80 | 80/80 | 80/80 | 0 |
+| 0.010 | 80/80 | 80/80 | 80/80 | 0 |
+| 0.100 | 80/80 | 80/80 | 80/80 | 0 |
+| 1.000 | 80/80 | 80/80 | 80/80 | 0 |
+| 4.000 | 80/80 | 80/80 | 80/80 | 0 |
+
+The complementary representation was already sufficient for every run and remained perfectly usable under the frozen counterfactual.
+
+Normal training also succeeded in every run.
+
+### Results — Partial-Overlap `0010|0111`
+
+The injection representation was sufficient in exactly `64/80` runs at every strength.
+
+The frozen counterfactual succeeded in all of those 64 cases.
+
+Normal training produced fewer successes.
+
+| Strength | Initially sufficient | Normal success | Frozen success | Normal failed → frozen success |
+|---:|---:|---:|---:|---:|
+| 0.001 | 64/80 | 55/80 | 64/80 | **16** |
+| 0.010 | 64/80 | 48/80 | 64/80 | **16** |
+| 0.100 | 64/80 | 55/80 | 64/80 | **9** |
+| 1.000 | 64/80 | 56/80 | 64/80 | **8** |
+| 4.000 | 64/80 | 63/80 | 64/80 | **1** |
+
+Across the five strengths:
+
+- initially sufficient cases: `320`
+- normal failures among them: `50`
+- frozen failures among them: `0`
+- normal failures rescued by freezing: `50`
+
+### Observation
+
+There were **50 cases** in which the representation was already sufficient at injection, normal training failed, and the identical representation remained successful under the frozen counterfactual.
+
+This is the clean causal result Experiment 069 was designed to test.
+
+The effect was strongest at weak feature strengths.
+
+At strength `0.001`, 16 of 64 initially sufficient runs failed under normal training but succeeded under the frozen counterfactual.
+
+At strength `4.0`, only 1 such case remained.
+
+### Interpretation
+
+These results provide direct evidence that hidden-representation drift contributes to optimization failure.
+
+The required representation already existed at injection.
+
+Normal optimization nevertheless moved the hidden representation into a state that could no longer solve the task.
+
+Preventing that movement preserved the solution.
+
+Therefore:
+
+> Some optimization failures are caused not by insufficient representational capacity, but by optimization moving away from an already-sufficient representation.
+
+### Results — Representation Construction
+
+The frozen counterfactual produced zero successful cases from initially insufficient representations.
+
+This is expected because the hidden representation cannot change in the frozen branch.
+
+Normal training, however, successfully constructed new sufficient representations in some initially insufficient cases.
+
+Successful I→S cases included:
+
+- `0010|0111`, strength `0.001`: `7`
+- `0010|0010`, strength `0.100`: `7`
+- `0010|0010`, strength `1.000`: `8`
+- `0010|0010`, strength `4.000`: `8`
+
+Total:
+
+**30 successful trajectories required hidden-representation change.**
+
+### Major Findings
+
+Experiment 069 establishes two opposing roles for representation movement.
+
+**1. Representation movement can be necessary.**
+
+Some initially insufficient representations only became successful because hidden-layer training changed the representation.
+
+**2. Representation movement can be harmful.**
+
+Fifty initially sufficient trajectories failed under normal training but remained solvable when their injection representations were preserved.
+
+Therefore:
+
+> Representation movement is both the mechanism for discovering new solutions and a possible source of losing existing solutions.
+
+### Important Understanding
+
+Experiments 067–069 now form a coherent sequence.
+
+**Experiment 067**
+
+Separated representation capacity from ordinary optimization.
+
+**Experiment 068**
+
+Showed that the hidden representation changes dynamically and can either improve or damage representational sufficiency.
+
+**Experiment 069**
+
+Intervened on that movement and showed that preserving an already-sufficient representation prevents the corresponding normal-training failures.
+
+This leads to a more precise model of learning:
+
+1. Representation determines what solutions are available.
+2. Optimization changes the representation.
+3. Representation change can construct missing structure.
+4. Representation change can destroy useful structure.
+5. Feature strength affects how easily useful structure is exploited.
+6. Successful learning requires both finding useful representations and navigating representation space without unnecessarily losing them.
+
+### Conclusion
+
+Experiment 069 provides causal evidence that hidden-representation drift contributes to optimization failure.
+
+For the partial-overlap structure, 50 initially sufficient trajectories failed under normal training while the same injection representations remained perfectly solvable under the frozen counterfactual.
+
+At the same time, 30 initially insufficient trajectories succeeded only through normal hidden-representation change.
+
+The resulting picture is:
+
+> **When the representation is insufficient, movement can be necessary.**
+
+> **When the representation is already sufficient, movement can be harmful.**
+
+The problem is therefore no longer simply whether gradient descent can find a useful representation.
+
+The deeper question is:
+
+> **How does optimization determine when to preserve an existing representation and when to change it?**
+
+### Status
+
+**Experiment 069 complete.**
+
+### Next Direction
+
+Experiment 070 should test whether useful representation learning can be preserved while harmful representation drift is reduced.
+
+A natural intervention is to allow normal hidden-layer training while adding a penalty that encourages the hidden representation to remain close to its injection-time state.
+
+This would test whether representation stability can improve optimization reliability without completely freezing representation learning.
