@@ -5610,3 +5610,143 @@ The experiment should vary both:
 - total post-injection training budget
 
 while keeping the `0010|0100` feature structure fixed.
+
+## Experiment 065 — Strength × Training Budget
+
+### Question
+
+Can additional training time compensate for very weak but structurally useful injected features?
+
+Experiment 064 showed that feature strength strongly affected convergence speed while every tested strength eventually rescued all 80 runs. Experiment 065 tests whether additional optimization time can compensate for extremely weak features.
+
+### Setup
+
+The feature structure was fixed at `0010|0100`.
+
+The network started with width 2 and received 2 additional hidden neurons at epoch 100.
+
+Training used:
+
+- He initialization
+- full-batch training
+- learning rate `0.10`
+- seeds `0–9`
+- initialization offsets `[0, 1, 2, 3, 4, 5, 10, 100]`
+- zero initial output weights for the injected neurons
+- success threshold: loss < `1e-6`
+
+Feature strengths tested:
+
+`1e-8`, `1e-7`, `1e-6`, `1e-5`, `1e-4`, `1e-3`, `1e-2`, `0.1`, `1.0`, `4.0`
+
+Post-injection training budgets tested:
+
+`100`, `250`, `500`, `1000`, `2000`, `3900` updates.
+
+Each strength/seed/initialization combination was trained once through the full 3900-update budget, with loss recorded at each selected budget. Therefore the 60 strength × budget cells are measurements from 800 underlying trajectories rather than 4800 independent runs.
+
+### Results
+
+| Feature strength | 100 | 250 | 500 | 1000 | 2000 | 3900 |
+|---:|---:|---:|---:|---:|---:|---:|
+| 0.00000001 | 0/80 | 0/80 | 0/80 | 0/80 | 34/80 | 80/80 |
+| 0.00000010 | 0/80 | 0/80 | 0/80 | 0/80 | 63/80 | 80/80 |
+| 0.00000100 | 0/80 | 0/80 | 0/80 | 0/80 | 64/80 | 80/80 |
+| 0.00001000 | 0/80 | 0/80 | 0/80 | 0/80 | 64/80 | 80/80 |
+| 0.00010000 | 0/80 | 0/80 | 0/80 | 0/80 | 77/80 | 80/80 |
+| 0.00100000 | 0/80 | 0/80 | 0/80 | 0/80 | 80/80 | 80/80 |
+| 0.01000000 | 0/80 | 0/80 | 0/80 | 54/80 | 80/80 | 80/80 |
+| 0.10000000 | 0/80 | 0/80 | 0/80 | 71/80 | 80/80 | 80/80 |
+| 1.00000000 | 0/80 | 0/80 | 45/80 | 80/80 | 80/80 | 80/80 |
+| 4.00000000 | 0/80 | 27/80 | 64/80 | 74/80 | 80/80 | 80/80 |
+
+### Observation
+
+Training budget clearly compensated for weak feature strength.
+
+The weakest feature tested, `1e-8`, produced no successful runs through 1000 post-injection updates, but reached 34/80 by 2000 updates and 80/80 by 3900 updates.
+
+At strength `1e-3`, all 80 runs succeeded within 2000 updates.
+
+At strength `0.01`, 54/80 succeeded by 1000 updates and all 80 succeeded by 2000.
+
+At strength `1.0`, 45/80 succeeded by 500 updates and all 80 succeeded by 1000.
+
+At strength `4.0`, 27/80 succeeded by 250 updates and 64/80 by 500 updates.
+
+At the full 3900-update budget, every tested feature strength achieved 80/80 success.
+
+### Interpretation
+
+Experiment 065 directly supports the idea that a sufficiently weak but structurally useful feature can be rescued by giving optimization more time.
+
+There was no tested feature strength that remained permanently unsuccessful when the full 3900-update budget was available.
+
+The main tradeoff is:
+
+**weaker feature → slower optimization → larger training budget required**
+
+**stronger feature → faster optimization → smaller training budget required**
+
+The effect is not perfectly monotonic at every intermediate budget. For example, strength `4.0` reached 74/80 at 1000 updates while strength `1.0` reached 80/80. This shows that increasing feature magnitude does not guarantee a strictly better optimization trajectory at every fixed training budget.
+
+### Mean Loss
+
+The mean-loss results showed the same overall relationship.
+
+For strength `1e-8`:
+
+- 100 updates: `0.401794947`
+- 250 updates: `0.367901137`
+- 500 updates: `0.266490770`
+- 1000 updates: `0.213608871`
+- 2000 updates: `0.030108976`
+- 3900 updates: approximately `0`
+
+For strength `1.0`:
+
+- 100 updates: `0.112220870`
+- 250 updates: `0.004186262`
+- 500 updates: `0.000022448`
+- 1000 updates: `0.000000017`
+- 2000 updates: approximately `0`
+- 3900 updates: approximately `0`
+
+For strength `4.0`:
+
+- 100 updates: `0.003781465`
+- 250 updates: `0.000139592`
+- 500 updates: `0.000010615`
+- 1000 updates: `0.000000147`
+- 2000 updates: approximately `0`
+- 3900 updates: approximately `0`
+
+### Lesson
+
+Feature structure and feature strength play different roles.
+
+The complementary `0010|0100` structure makes the injected representation useful. Strength determines how quickly that useful direction can influence optimization.
+
+Training budget can compensate for extremely weak strength, but the cost is slower convergence.
+
+A weak feature is therefore not necessarily a bad feature. It may simply require more optimization steps before its contribution becomes effective.
+
+### Important Understanding
+
+The investigation now suggests three connected factors:
+
+1. **Feature structure** determines whether the injected neurons provide useful complementary information.
+2. **Feature strength** determines how quickly that information influences learning.
+3. **Training budget** determines whether optimization has enough time to exploit a weak but useful feature.
+
+Experiments 063 and 064 established the strength/convergence relationship.
+
+Experiment 065 adds the missing budget dimension and shows that additional training can compensate for extremely weak but useful injected features.
+
+### Status
+
+Experiment 065 complete.
+
+### Next Direction
+
+The next experiments should test whether the same strength-versus-budget relationship holds when the injected features are less ideal than the fixed `0010|0100` pair, and whether feature quality, feature strength, and optimization time interact.
