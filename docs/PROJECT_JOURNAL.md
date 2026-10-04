@@ -5320,3 +5320,140 @@ Experiment 062 complete.
 Experiment 063 should hold the binary activation pattern fixed while systematically varying the activation magnitude or margin of the injected features.
 
 The goal is to determine whether rescue reliability changes continuously with feature strength and whether a minimum useful activation margin exists.
+
+## Experiment 063 — Feature Strength Sweep
+
+### Question
+
+How does the magnitude of newly injected hidden features affect rescue reliability?
+
+Experiment 062 showed that binary task coverage alone did not fully explain rescue success. Experiment 063 therefore held the exact binary activation pattern fixed at `0010|0100` and varied only the strength of the injected features.
+
+The goal was to determine whether rescue reliability changes with activation magnitude.
+
+### Setup
+
+Used the rescue configuration established in Experiments 043–062.
+
+- He initialization for the original width-2 network
+- 2 initial hidden ReLU neurons
+- one linear output neuron
+- XOR training data
+- full-batch gradient averaging
+- learning rate: 0.10
+- 4000 total training epochs
+- capacity injection at epoch 100
+- 2 additional hidden ReLU neurons
+- zero initial output weights for the new neurons
+- seeds 0–9
+- initialization offsets: 0, 1, 2, 3, 4, 5, 10, 100
+
+The two injected features were fixed to the complementary input-space construction:
+
+- first feature: `0010`
+- second feature: `0100`
+
+The entire affine feature vectors were multiplied by a strength factor.
+
+Tested strengths:
+
+- 0.01
+- 0.025
+- 0.05
+- 0.10
+- 0.25
+- 0.50
+- 1.00
+- 2.00
+- 4.00
+
+Because each feature was multiplied by a positive scalar, the binary activation pattern remained unchanged.
+
+Each strength contained 80 seed/initialization combinations.
+
+Success was defined as final loss < 1e-6.
+
+### Results
+
+| Feature strength | Positive activation | Binary pattern | Successful |
+|---:|---:|---|---:|
+| 0.010 | 0.007212 | 0010\|0100 | 80/80 |
+| 0.025 | 0.018031 | 0010\|0100 | 80/80 |
+| 0.050 | 0.036062 | 0010\|0100 | 80/80 |
+| 0.100 | 0.072124 | 0010\|0100 | 80/80 |
+| 0.250 | 0.180310 | 0010\|0100 | 80/80 |
+| 0.500 | 0.360620 | 0010\|0100 | 80/80 |
+| 1.000 | 0.721239 | 0010\|0100 | 80/80 |
+| 2.000 | 1.442479 | 0010\|0100 | 80/80 |
+| 4.000 | 2.884958 | 0010\|0100 | 80/80 |
+
+All 9 strength conditions achieved:
+
+- 80/80 successful runs
+- final mean loss = 0.000000000000
+
+Total runs:
+
+720
+
+Total successful runs:
+
+720/720
+
+### Observation
+
+Feature strength had no effect on eventual rescue reliability across the tested range.
+
+The weakest condition, strength `0.01`, produced only approximately `0.007212` activation on the relevant positive example, yet still achieved 80/80 successful rescues.
+
+Increasing feature strength by a factor of 400, from `0.01` to `4.00`, did not change the final success rate.
+
+The binary feature pattern also remained identical in every condition:
+
+`0010|0100`
+
+### Interpretation
+
+Experiment 063 provides evidence that the exact activation magnitude of the injected complementary features is not the determining factor for eventual rescue under this training budget.
+
+The important distinction is that this experiment measured only the final outcome after 4000 training epochs.
+
+A weak feature may still provide a useful optimization direction but require more training updates before its contribution becomes substantial.
+
+Therefore, the result rules out a simple claim such as:
+
+> Rescue requires a large activation margin.
+
+It does not yet rule out the possibility that feature strength affects the speed of rescue.
+
+### Lesson
+
+A representation can be extremely weak in magnitude and still provide enough useful structure for gradient descent to eventually recover the XOR task.
+
+This strengthens the evidence that the structural identity of the feature response matters more than its raw activation magnitude.
+
+However, eventual success and convergence speed are different questions.
+
+### Important Understanding
+
+The investigation has now tested:
+
+1. Feature difference
+2. Task coverage
+3. Feature activation strength
+
+Binary pattern remained fixed while strength changed, and eventual success remained constant.
+
+The remaining question is whether strength changes the trajectory even when the final destination is the same.
+
+### Status
+
+Experiment 063 complete.
+
+### Next Direction
+
+Experiment 064 should keep the `0010|0100` feature pattern fixed while varying feature strength over a wider range and measuring convergence speed.
+
+The primary metric should be the first epoch at which loss falls below several thresholds, rather than only final success.
+
+This will determine whether weak injected features learn more slowly and whether a practical minimum feature strength exists for rapid rescue.
