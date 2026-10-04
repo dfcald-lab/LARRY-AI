@@ -6887,3 +6887,159 @@ This removes output-layer optimization as a confound and isolates the effect of 
 The key question becomes:
 
 > When the output layer is already optimal for the injection representation, does selectively constraining hidden-representation movement improve or reduce the ability to maintain or discover a solution?
+
+### Controlled Rerun — Analytic Output Readout
+
+The exploratory 070 run revealed an output-layer confound.
+
+The stability penalty was originally applied while the output layer still had to learn from its existing state.
+
+To isolate the effect of representation stability, the experiment was rerun with the output layer initialized immediately after injection to the analytically optimal linear readout for the injection-time hidden representation.
+
+This is the primary controlled result for Experiment 070.
+
+### Controlled Setup
+
+The λ sweep remained:
+
+`0`, `0.001`, `0.01`, `0.1`, `1.0`, `10.0`
+
+Every λ condition began from the same injection state.
+
+The only intervention was the representation-stability penalty:
+
+`task_loss + λ × mean(0.5 × (hidden_activation - injection_activation)^2)`
+
+The output layer was first set to the analytic best readout and then ordinary hidden/output training continued.
+
+This removes output-readout discovery as a confounding factor while testing the stability penalty.
+
+### Controlled Results — Complementary `0010|0100`
+
+| Strength | λ=0 | λ=.001 | λ=.01 | λ=.1 | λ=1 | λ=10 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.001 | 78 | 72 | 72 | 72 | 72 | 72 |
+| 0.010 | 77 | 77 | 77 | 77 | 77 | 77 |
+| 0.100 | 78 | 74 | 74 | 74 | 74 | 74 |
+| 1.000 | 80 | 80 | 80 | 80 | 80 | 80 |
+| 4.000 | 80 | 80 | 80 | 80 | 80 | 80 |
+
+Success counts are out of 80 runs.
+
+At strengths `1.0` and `4.0`, the injection representation was so effective that every run remained successful and showed zero measured representation movement.
+
+At weaker strengths, adding stability did not improve success and often reduced it.
+
+### Controlled Results — Partial-Overlap `0010|0111`
+
+| Strength | λ=0 | λ=.001 | λ=.01 | λ=.1 | λ=1 | λ=10 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.001 | 30 | 15 | 15 | 15 | 15 | 15 |
+| 0.010 | 22 | 17 | 17 | 17 | 17 | 17 |
+| 0.100 | 26 | 21 | 17 | 17 | 17 | 17 |
+| 1.000 | 51 | 49 | 45 | 45 | 44 | 35 |
+| 4.000 | 57 | 54 | 49 | 48 | 48 | 39 |
+
+No initially insufficient runs became successful in the controlled partial-overlap sweep.
+
+The stability penalty therefore did not create a useful middle ground between representation preservation and representation construction.
+
+### Controlled Results — Redundant `0010|0010`
+
+| Strength | λ=0 | λ=.001 | λ=.01 | λ=.1 | λ=1 | λ=10 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.001 | 32 | 28 | 15 | 15 | 23 | 23 |
+| 0.010 | 27 | 27 | 15 | 15 | 23 | 23 |
+| 0.100 | 35 | 35 | 15 | 15 | 23 | 23 |
+| 1.000 | 40 | 40 | 32 | 32 | 32 | 29 |
+| 4.000 | 40 | 40 | 32 | 32 | 32 | 32 |
+
+At strengths `0.001–0.100`, some initially insufficient → successful trajectories occurred only at λ=0 or λ=0.001.
+
+At stronger penalties, those representation-construction trajectories disappeared.
+
+### Controlled Observation
+
+The stability penalty successfully reduced representation movement.
+
+However:
+
+> Less representation movement did not produce more successful learning.
+
+The penalty restricted both useful and harmful hidden movement.
+
+The controlled result therefore rejects the idea that a global representation-stability penalty is sufficient to improve optimization.
+
+### Major New Finding
+
+The most important difference between the exploratory and controlled runs is not the stability penalty.
+
+It is the output-layer initialization.
+
+In the controlled run, the output layer begins at the analytically optimal readout for the injection representation.
+
+Under this condition, initially insufficient representations frequently remain insufficient.
+
+For example, in the controlled partial-overlap sweep, every strength and λ condition reports:
+
+`initially_insufficient: success = 0`
+
+This differs from the earlier ordinary-training behavior, where some insufficient representations became sufficient through hidden-layer movement.
+
+### Interpretation
+
+Output-layer state is therefore not merely a downstream detail.
+
+The output error signal influences whether hidden representations receive pressure to change.
+
+Starting from an output readout that is already optimal for the existing representation can remove or greatly reduce the gradient signal responsible for constructing a new representation.
+
+This means:
+
+> **Representation learning depends on the state of the readout that is driving its gradients.**
+
+The relationship between representation and optimization is therefore even more coupled than Experiment 069 suggested.
+
+The hidden representation is not optimized independently of the output layer.
+
+### Conclusion
+
+The controlled Experiment 070 result is:
+
+> **A global penalty against representation drift does not improve learning reliability.**
+
+The deeper discovery is:
+
+> **Changing the output initialization changes the hidden representation trajectory.**
+
+This creates a new experimental question that is more fundamental than simply finding a better stability coefficient:
+
+> **How does the strength of the output readout at injection control subsequent representation learning?**
+
+### Status
+
+**Experiment 070 complete.**
+
+The exploratory run and controlled rerun are both preserved.
+
+The controlled rerun is the primary result because it removes output-readout discovery as a confound.
+
+### Next Direction
+
+Experiment 071 should vary the amount of analytic output initialization while keeping the hidden injection state identical.
+
+Use interpolation between the original zero output and the analytic best output:
+
+`α = 0, 0.25, 0.50, 0.75, 1.00`
+
+Measure:
+
+* final task success
+* initially sufficient → failed cases
+* initially insufficient → successful cases
+* hidden representation movement
+* final analytic readout loss
+
+The central question is:
+
+> **How does output-layer initialization control whether optimization preserves, damages, or constructs the hidden representation?**

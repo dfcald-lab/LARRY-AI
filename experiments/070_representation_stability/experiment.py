@@ -900,11 +900,23 @@ def run(
         network,
     )
 
-    injection_readout_loss = best_linear_readout_loss(
+    (
+        injection_readout_loss,
+        injection_bias,
+        injection_weights,
+    ) = best_linear_readout_parameters(
         injection_representation,
     )
 
     anchored_network = copy.deepcopy(network)
+
+    # Give every lambda condition the same optimal
+    # output readout available at injection.
+    set_output_readout(
+        anchored_network,
+        injection_bias,
+        injection_weights,
+    )
 
     for _ in range(max(training_budgets)):
         anchored_batch_epoch(
@@ -950,6 +962,10 @@ print()
 print(
     "Each lambda condition starts from the exact same "
     "post-injection state for a given seed/offset/structure/strength."
+)
+print(
+    "The output layer is initialized to the analytic best "
+    "linear readout at injection before training begins."
 )
 print()
 print(
