@@ -5457,3 +5457,156 @@ Experiment 064 should keep the `0010|0100` feature pattern fixed while varying f
 The primary metric should be the first epoch at which loss falls below several thresholds, rather than only final success.
 
 This will determine whether weak injected features learn more slowly and whether a practical minimum feature strength exists for rapid rescue.
+
+## Experiment 064 — Feature Strength Convergence
+
+### Question
+
+Does feature strength affect how quickly a complementary injected representation rescues a failing trajectory, even when eventual rescue remains reliable?
+
+Experiment 063 showed that the fixed `0010|0100` feature pair produced 80/80 successful rescues across a wide range of feature strengths. Experiment 064 therefore extended the range to much weaker features and measured convergence speed rather than final success alone.
+
+### Setup
+
+Used the same rescue configuration as Experiment 063.
+
+- He initialization for the original width-2 network
+- 2 initial hidden ReLU neurons
+- one linear output neuron
+- XOR training data
+- full-batch gradient averaging
+- learning rate: 0.10
+- 4000 total training epochs
+- capacity injection at epoch 100
+- 2 additional hidden ReLU neurons
+- zero initial output weights for the new neurons
+- seeds 0–9
+- initialization offsets: 0, 1, 2, 3, 4, 5, 10, 100
+
+The injected feature pattern was fixed at:
+
+`0010|0100`
+
+Only feature strength was varied.
+
+Tested strengths:
+
+- 0.000001
+- 0.00001
+- 0.0001
+- 0.001
+- 0.003
+- 0.01
+- 0.03
+- 0.10
+- 1.00
+- 4.00
+
+Each strength contained 80 seed/initialization combinations.
+
+Convergence was measured after injection using the first post-injection update at which total loss fell below:
+
+- 1e-2
+- 1e-4
+- 1e-6
+
+Success remained defined as final loss < 1e-6.
+
+### Results
+
+| Feature strength | Positive activation | Successful | Mean steps to 1e-2 | Mean steps to 1e-4 | Mean steps to 1e-6 |
+|---:|---:|---:|---:|---:|---:|
+| 0.000001 | 0.000000721 | 80/80 | 1231.56 | 1446.00 | 1651.22 |
+| 0.000010 | 0.000007212 | 80/80 | 1116.89 | 1328.55 | 1530.97 |
+| 0.000100 | 0.000072124 | 80/80 | 981.86 | 1195.46 | 1399.36 |
+| 0.001000 | 0.000721239 | 80/80 | 823.98 | 1030.74 | 1228.09 |
+| 0.003000 | 0.002163718 | 80/80 | 742.42 | 939.76 | 1127.86 |
+| 0.010000 | 0.007212395 | 80/80 | 640.50 | 824.73 | 1002.83 |
+| 0.030000 | 0.021637184 | 80/80 | 539.79 | 719.76 | 894.91 |
+| 0.100000 | 0.072123945 | 80/80 | 426.94 | 606.56 | 782.27 |
+| 1.000000 | 0.721239451 | 80/80 | 187.05 | 348.86 | 516.74 |
+| 4.000000 | 2.884957804 | 80/80 | 61.96 | 201.91 | 367.30 |
+
+All 10 strength conditions achieved:
+
+- 80/80 successful runs
+
+Total:
+
+720/720 successful runs.
+
+### Observation
+
+Feature strength strongly affected convergence speed while leaving eventual rescue unchanged.
+
+The weakest tested feature strength, `0.000001`, still rescued every run, but required an average of 1651.22 post-injection updates to reach loss below 1e-6.
+
+The strongest tested feature strength, `4.0`, also rescued every run and required only 367.30 updates on average.
+
+The convergence-time relationship was consistent across all three loss thresholds.
+
+At the 1e-2 threshold:
+
+- strength `0.000001`: 1231.56 steps
+- strength `4.0`: 61.96 steps
+
+At the 1e-4 threshold:
+
+- strength `0.000001`: 1446.00 steps
+- strength `4.0`: 201.91 steps
+
+At the 1e-6 threshold:
+
+- strength `0.000001`: 1651.22 steps
+- strength `4.0`: 367.30 steps
+
+### Interpretation
+
+Experiment 064 separates two effects that were previously difficult to distinguish.
+
+Feature structure appears to determine whether the injected representation provides a useful rescue direction.
+
+Feature strength affects how quickly that direction becomes influential enough to drive the network toward the solution.
+
+The results do not support the existence of a minimum feature strength required for eventual rescue within the tested range. Even an activation of approximately `0.000000721` was eventually sufficient for all 80 seed/initialization combinations.
+
+However, weak features are substantially slower.
+
+Increasing strength from `0.000001` to `4.0` reduced the mean time to the 1e-6 threshold by approximately a factor of 4.5.
+
+### Lesson
+
+A weak but structurally useful feature can eventually produce the same solution as a strong feature.
+
+The difference is optimization efficiency rather than final representational capability.
+
+This suggests that the magnitude of a useful feature may act more like a learning-rate multiplier for the newly available direction than like a hard requirement for representation.
+
+### Important Understanding
+
+The investigation now has a clearer hierarchy:
+
+1. **Feature structure** — determines whether the injected neurons provide useful complementary information.
+2. **Feature strength** — determines how quickly that information becomes effective during optimization.
+3. **Training budget** — determines whether a weak but useful feature has enough time to produce the desired result.
+
+Experiment 063 showed that strength did not change eventual rescue across the original tested range.
+
+Experiment 064 showed that strength strongly changes convergence speed when the range is extended much lower.
+
+### Status
+
+Experiment 064 complete.
+
+### Next Direction
+
+Experiment 065 should test feature strength against training budget directly.
+
+The goal is to determine whether weak features that eventually succeed simply require more optimization time, and whether there is a practical boundary where increasing the training budget can compensate for extremely weak injected features.
+
+The experiment should vary both:
+
+- feature strength
+- total post-injection training budget
+
+while keeping the `0010|0100` feature structure fixed.
