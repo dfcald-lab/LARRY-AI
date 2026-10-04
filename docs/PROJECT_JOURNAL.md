@@ -6664,3 +6664,226 @@ Experiment 070 should test whether useful representation learning can be preserv
 A natural intervention is to allow normal hidden-layer training while adding a penalty that encourages the hidden representation to remain close to its injection-time state.
 
 This would test whether representation stability can improve optimization reliability without completely freezing representation learning.
+
+## Experiment 070 — Representation Stability
+
+### Question
+
+Can hidden-representation stability reduce harmful representation drift without completely preventing useful representation learning?
+
+Experiment 069 showed that two things can both be true:
+
+* hidden-representation movement can be necessary when the representation is initially insufficient
+* hidden-representation movement can be harmful when the representation is already sufficient
+
+Experiment 070 tested whether a stability penalty could discourage harmful movement while still allowing useful movement.
+
+The intervention was applied in activation space rather than parameter space.
+
+### Setup
+
+The experiment used the same three feature structures from Experiments 063–069:
+
+* `0010|0100` — complementary
+* `0010|0111` — partial overlap
+* `0010|0010` — redundant
+
+Feature strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+Representation-stability penalty strengths:
+
+`λ = 0`, `0.001`, `0.01`, `0.1`, `1.0`, `10.0`
+
+Each condition contained:
+
+* 10 seeds
+* 8 initialization offsets
+* 80 runs per condition
+
+The total sweep contained:
+
+`3 structures × 5 strengths × 6 λ values × 80 runs = 7200 runs`
+
+The penalty was:
+
+`task_loss + λ × mean(0.5 × (hidden_activation - injection_activation)^2)`
+
+The reference representation was the hidden activation state immediately after feature injection.
+
+The interpretation of λ was:
+
+* `λ = 0` — ordinary training
+* larger λ — increasingly stronger pressure to remain near the injection-time representation
+* very large λ — increasingly similar to freezing the representation
+
+### Important Methodological Limitation
+
+This first 070 run did **not** initialize the output layer to the analytically optimal readout at injection.
+
+The output layer therefore continued learning from its existing state while the hidden representation was simultaneously being constrained.
+
+This introduces a confounding factor:
+
+> A stability penalty may make optimization harder even when the representation itself remains useful.
+
+Therefore these results should not be treated as the final causal test of representation stability.
+
+The experiment is still useful because it shows how the proposed stability objective behaves, but a cleaner rerun is required.
+
+---
+
+### Results — Final Training Success
+
+| Structure | Strength | λ=0 | λ=.001 | λ=.01 | λ=.1 | λ=1 | λ=10 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `0010|0100` | 0.001 | 80 | 40 | 0 | 0 | 0 | 0 |
+| `0010|0100` | 0.01 | 80 | 48 | 0 | 0 | 0 | 0 |
+| `0010|0100` | 0.1 | 80 | 66 | 0 | 0 | 0 | 0 |
+| `0010|0100` | 1.0 | 80 | 79 | 2 | 10 | 36 | 60 |
+| `0010|0100` | 4.0 | 80 | 80 | 69 | 72 | 72 | 72 |
+| `0010|0111` | 0.001 | 55 | 16 | 0 | 0 | 0 | 0 |
+| `0010|0111` | 0.01 | 48 | 24 | 0 | 0 | 0 | 0 |
+| `0010|0111` | 0.1 | 55 | 26 | 0 | 0 | 0 | 0 |
+| `0010|0111` | 1.0 | 56 | 53 | 1 | 0 | 14 | 27 |
+| `0010|0111` | 4.0 | 63 | 48 | 15 | 15 | 44 | 35 |
+| `0010|0010` | 0.001 | 48 | 16 | 0 | 0 | 0 | 0 |
+| `0010|0010` | 0.01 | 48 | 24 | 0 | 0 | 0 | 0 |
+| `0010|0010` | 0.1 | 55 | 31 | 0 | 0 | 0 | 0 |
+| `0010|0010` | 1.0 | 56 | 40 | 1 | 0 | 23 | 23 |
+| `0010|0010` | 4.0 | 56 | 44 | 8 | 0 | 32 | 24 |
+
+### Observation
+
+The stability penalty consistently reduced representational movement.
+
+For example, complementary `0010|0100` at strength `0.001` moved from mean feature cosine `0.948371` at `λ=0` to `0.998714` at `λ=10`, while pattern changes fell from `1.900` to `0.225`.
+
+However, greater representational stability did not automatically produce better task optimization.
+
+The same condition went from:
+
+`80/80 success at λ=0`
+
+to:
+
+`0/80 success at λ=10`
+
+The hidden representation became more stable while actual training performance became worse.
+
+### Observation — Initially Sufficient Representations
+
+The stability penalty did not generally rescue initially sufficient representations.
+
+For partial overlap at strength `0.001`:
+
+* λ=0: `55/80`
+* λ=0.001: `16/80`
+* λ≥0.01: `0/80`
+
+For redundant structure at strength `0.1`:
+
+* λ=0: `55/80`
+* λ=0.001: `31/80`
+* λ≥0.01: `0/80`
+
+This means that simply preserving the injection representation was not enough to make ordinary training succeed.
+
+### Observation — Initially Insufficient Representations
+
+The penalty also suppressed successful representation construction.
+
+For redundant `0010|0010` at strength `1.0`:
+
+* λ=0: `8` initially insufficient runs became successful
+* λ=0.001: `8` remained successful
+* λ=0.01: `0`
+* λ=0.1: `0`
+* λ=1.0: `0`
+* λ=10: `0`
+
+For partial overlap, there were no initially insufficient → successful cases for any λ in this run except the λ=0 baseline behavior inherited from ordinary optimization at the weakest strength.
+
+### Interpretation
+
+The proposed stability penalty successfully controlled the variable it was designed to control:
+
+> increasing λ reduced hidden-representation movement.
+
+But reducing movement was not equivalent to improving learning.
+
+The penalty constrained both kinds of movement:
+
+`useful movement`
+
+and
+
+`harmful movement`
+
+The network therefore lost some ability to construct new representations while also not receiving a reliable optimization benefit on representations that were already sufficient.
+
+This suggests:
+
+> **Representation drift is not inherently bad. The important problem is whether the direction of drift is useful or harmful.**
+
+A global penalty cannot distinguish between those two cases.
+
+### Important Understanding
+
+Experiments 067–070 now give a progressively more precise picture.
+
+**Experiment 067**
+
+A representation can be sufficient even when ordinary training fails.
+
+**Experiment 068**
+
+The representation changes during optimization.
+
+**Experiment 069**
+
+Some initially sufficient representations remain solvable when hidden movement is completely prevented, while some initially insufficient cases require hidden movement to succeed.
+
+**Experiment 070**
+
+Simply penalizing all representation movement does not solve the problem.
+
+The important distinction is therefore not:
+
+`movement vs. no movement`
+
+but:
+
+`useful movement vs. harmful movement`
+
+### Conclusion
+
+The first 070 sweep does **not** support the idea that global representation stabilization improves training.
+
+Instead, it shows that the stability penalty introduces a new tradeoff:
+
+* stronger stability produces less representation drift
+* stronger stability can also interfere with optimization
+* useful representation construction can be suppressed
+* preserving representation geometry alone does not guarantee successful gradient-based training
+
+The main lesson is:
+
+> **The goal should not be to keep the representation fixed. The goal should be to prevent harmful representation changes while preserving useful ones.**
+
+### Status
+
+**Experiment 070 exploratory run complete.**
+
+The result is not yet considered the final 070 causal test because the output layer was not initialized to the analytic best readout at injection.
+
+### Next Direction
+
+Run a controlled version of Experiment 070 in which every λ condition receives the same analytically optimal output readout immediately after injection.
+
+This removes output-layer optimization as a confound and isolates the effect of the representation-stability penalty itself.
+
+The key question becomes:
+
+> When the output layer is already optimal for the injection representation, does selectively constraining hidden-representation movement improve or reduce the ability to maintain or discover a solution?
