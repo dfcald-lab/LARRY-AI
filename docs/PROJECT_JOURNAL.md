@@ -7656,3 +7656,70 @@ or from:
 The central question becomes:
 
 > **Is harmful representation drift caused by the magnitude of the new-feature gradient, or by its directional alignment with the task?**
+
+## Experiment 073 — Gradient Direction
+
+### Question
+
+Is harmful representation drift caused by gradient magnitude or gradient direction?
+
+### Setup
+
+Experiment 073 used the same post-injection network state across all gamma conditions.
+
+The two newly injected hidden features received output coupling:
+
+- gamma = -1.0, -0.5, 0.0, +0.5, +1.0
+- gamma > 0 follows the analytic new-feature output direction
+- gamma < 0 reverses that direction
+- gamma = 0 gives the new features zero output coupling
+
+The original learned output weights and bias were left unchanged.
+
+Each condition used 10 seeds x 8 initialization offsets = 80 runs.
+
+### Results
+
+The sign of the new-feature output coupling had a large effect even when the absolute coupling magnitude was identical.
+
+Examples:
+
+- Complementary `0010|0100`, strength 0.001:
+  - gamma = -0.50: 40/80 successful
+  - gamma = +0.50: 0/80 successful
+  - gamma = 0.00: 80/80 successful
+
+- Complementary `0010|0100`, strength 0.010:
+  - gamma = -0.50: 40/80
+  - gamma = +0.50: 3/80
+  - gamma = 0.00: 80/80
+
+- Partial `0010|0111`, strength 0.001:
+  - gamma = -0.50: 43/80
+  - gamma = +0.50: 16/80
+  - gamma = 0.00: 55/80
+
+- Redundant `0010|0010`, strength 0.001:
+  - gamma = -0.50: 40/80
+  - gamma = +0.50: 16/80
+  - gamma = 0.00: 48/80
+
+At strong complementary feature strength (4.0), the direction effect largely disappeared because the representation was already highly stable. The complementary structure reached 77/80 or better for every gamma condition.
+
+### Interpretation
+
+The results show that harmful representation drift is substantially influenced by gradient direction, not only gradient magnitude.
+
+Equal-magnitude positive and negative coupling produced very different representation movement and final success rates. The effect was strongest when the injected features were weak.
+
+This also reinforces the earlier result that output-layer coupling is an important control variable for hidden representation learning.
+
+The evidence does not yet directly measure the hidden gradient vectors themselves. Experiment 073 changes the sign of the output coupling and observes the resulting behavior, so the next step is to measure the actual hidden-gradient direction at injection.
+
+### Next Direction
+
+Measure the hidden-gradient vectors produced by positive and negative gamma at the injection step and compare their cosine similarity and magnitude.
+
+The goal is to connect:
+
+`gamma sign -> hidden gradient direction -> representation movement -> final success`
