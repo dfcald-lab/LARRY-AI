@@ -7366,3 +7366,293 @@ This tests whether the amount of direct output coupling given to a newly injecte
 The central question becomes:
 
 > **When a new feature is injected, how much output coupling does it need before it can meaningfully influence hidden-layer optimization?**
+
+## Experiment 072 — New-Feature Output Coupling
+
+### Question
+
+How much output coupling should a newly injected hidden feature receive before it meaningfully influences hidden-layer optimization?
+
+Experiment 071 showed that changing the complete output state at injection can radically alter the hidden-representation trajectory.
+
+However, that experiment changed both:
+
+* the learned pre-injection output pathway
+* the output coupling of the newly injected features
+
+Experiment 072 isolated the second effect.
+
+### Setup
+
+The three feature structures remained:
+
+* `0010|0100` — complementary
+* `0010|0111` — partial overlap
+* `0010|0010` — redundant
+
+Feature strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+New-feature output coupling:
+
+`β = 0`, `0.1`, `0.25`, `0.50`, `0.75`, `1.0`
+
+At injection:
+
+* the original output bias was preserved
+* the original output weights were preserved
+* only the two output weights connected to the newly injected neurons were changed
+
+The new-neuron output weights were initialized as:
+
+`β × analytic_new_feature_weights`
+
+Therefore:
+
+* `β=0` — new features enter with zero output coupling
+* `β=1` — new features receive their analytic best-readout output-weight components
+* intermediate β values provide partial coupling
+
+Each condition contained:
+
+* 10 seeds
+* 8 initialization offsets
+* 80 runs
+
+Total:
+
+`15 structure/strength conditions × 6 β values × 80 runs = 7200 runs`
+
+Success threshold:
+
+`loss < 1e-6`
+
+### Control Verification
+
+The `β=0` condition preserves the normal post-injection output state.
+
+The β=0 results reproduced the Experiment 069 baseline:
+
+#### Complementary `0010|0100`
+
+`80/80` at every strength.
+
+#### Partial-overlap `0010|0111`
+
+`55/80`, `48/80`, `55/80`, `56/80`, `63/80`
+
+for strengths:
+
+`0.001`, `0.01`, `0.1`, `1.0`, `4.0`
+
+#### Redundant `0010|0010`
+
+`48/80`, `48/80`, `55/80`, `56/80`, `56/80`
+
+for the same strengths.
+
+This confirms that β=0 is a valid ordinary-training control.
+
+---
+
+### Results — Complementary `0010|0100`
+
+| Strength | β=0 | β=.10 | β=.25 | β=.50 | β=.75 | β=1.00 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.001 | 80 | 0 | 0 | 0 | 40 | 40 |
+| 0.010 | 80 | 10 | 0 | 3 | 40 | 40 |
+| 0.100 | 80 | 77 | 53 | 41 | 40 | 40 |
+| 1.000 | 80 | 80 | 80 | 80 | 80 | 80 |
+| 4.000 | 80 | 80 | 80 | 80 | 80 | 80 |
+
+The strongest effect occurred for weak injected features.
+
+At strength `0.001`, introducing even modest output coupling caused complete failure at β=`0.10` and `0.25`.
+
+At β=`0.75` and `1.0`, success recovered partially to `40/80`.
+
+At strengths `1.0` and `4.0`, the complementary representation was robust to the new-feature output coupling.
+
+### Observation
+
+The newly injected features do not need direct output coupling to enable successful learning when the complementary representation is strong.
+
+In fact, for weak features, adding output coupling can be strongly destructive.
+
+---
+
+### Results — Partial-Overlap `0010|0111`
+
+| Strength | β=0 | β=.10 | β=.25 | β=.50 | β=.75 | β=1.00 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.001 | 55 | 16 | 16 | 16 | 43 | 43 |
+| 0.010 | 48 | 20 | 16 | 16 | 40 | 40 |
+| 0.100 | 55 | 49 | 45 | 41 | 39 | 39 |
+| 1.000 | 56 | 56 | 56 | 56 | 56 | 56 |
+| 4.000 | 63 | 62 | 63 | 61 | 60 | 58 |
+
+At weak strengths, small amounts of coupling sharply reduced success.
+
+At strength `0.001`:
+
+`55/80 → 16/80`
+
+when β increased from `0` to `0.10`.
+
+At strength `0.010`:
+
+`48/80 → 20/80`
+
+under the same change.
+
+At strengths `1.0` and `4.0`, the effect became much smaller.
+
+### Observation
+
+Output coupling of the new features is most dangerous when the injected features are weak.
+
+Strong features can tolerate or dominate the effect.
+
+---
+
+### Results — Redundant `0010|0010`
+
+| Strength | β=0 | β=.10 | β=.25 | β=.50 | β=.75 | β=1.00 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 0.001 | 48 | 8 | 8 | 16 | 40 | 40 |
+| 0.010 | 48 | 33 | 21 | 20 | 40 | 40 |
+| 0.100 | 55 | 53 | 45 | 45 | 45 | 45 |
+| 1.000 | 56 | 56 | 48 | 48 | 48 | 48 |
+| 4.000 | 56 | 56 | 48 | 48 | 48 | 48 |
+
+The redundant representation was also highly sensitive at weak strengths.
+
+At strength `0.001`, success fell from:
+
+`48/80 → 8/80`
+
+at β=`0.10`.
+
+At higher strengths, the effect was smaller but remained visible.
+
+---
+
+### Representation Movement
+
+The output-coupling intervention changed the hidden representation substantially.
+
+For example, complementary `0010|0100` at strength `0.001`:
+
+* β=0 mean feature cosine: `0.948371`
+* β=0.10: `0.125000`
+* β=0.25: `0.125000`
+* β=0.50: `0.175000`
+* β=0.75: `0.557037`
+* β=1.00: `0.557036`
+
+The corresponding activation-pattern Hamming distance increased sharply for the low-β conditions.
+
+This establishes that changing only the output weights of the newly injected features is sufficient to redirect hidden-representation learning.
+
+### Major Findings
+
+**1. New-feature output coupling is itself a major optimization variable.**
+
+The old learned output weights and bias can remain unchanged while changing the hidden trajectory dramatically.
+
+**2. Zero output coupling can still produce successful learning.**
+
+β=0 reproduces ordinary post-injection training and, in many conditions, produces the highest success.
+
+**3. Small nonzero coupling can be harmful.**
+
+Weak feature strengths were particularly sensitive to β=`0.10–0.50`.
+
+**4. Stronger features reduce sensitivity.**
+
+At feature strengths `1.0` and `4.0`, several conditions became largely insensitive to β.
+
+**5. The effect is not monotonic.**
+
+Increasing β did not simply make performance continuously better or worse.
+
+This mirrors the non-monotonic behavior observed in Experiment 071.
+
+### Important Understanding
+
+Experiments 071 and 072 separate an important part of the mechanism.
+
+Experiment 071 showed that changing the complete output state can dramatically alter learning.
+
+Experiment 072 shows that changing only the new-feature output pathway is enough to reproduce that effect.
+
+Therefore:
+
+> **The initial output coupling of a newly injected feature determines how strongly its representation participates in the subsequent gradient dynamics.**
+
+A newly injected feature is not passive.
+
+Its output connection immediately determines how much task-error signal is associated with that feature and therefore how strongly its hidden weights are driven.
+
+### Interpretation
+
+The results suggest that feature injection has two distinct components:
+
+`feature representation`
+
+and
+
+`feature output coupling`
+
+The representation determines what information the feature provides.
+
+The output coupling determines how strongly that feature participates in the task-loss gradient.
+
+This creates a feedback loop:
+
+`feature → output contribution → output error → hidden gradient → feature change`
+
+Experiment 072 shows that controlling the initial strength of this loop can dramatically change the final representation.
+
+### Conclusion
+
+Experiment 072 provides strong evidence that the newly injected feature's output coupling is an important control variable for representation learning.
+
+The best-performing condition is not universally the strongest or weakest coupling.
+
+Instead, the effect depends on:
+
+* feature structure
+* feature strength
+* current hidden representation
+* output coupling
+
+The main lesson is:
+
+> **A feature's usefulness is determined not only by the representation it creates, but also by how strongly that representation is connected to the task output.**
+
+### Status
+
+**Experiment 072 complete.**
+
+### Next Direction
+
+Experiment 073 should separate the two components of the new-feature gradient:
+
+1. the gradient magnitude created by output coupling
+2. the direction of that gradient determined by the feature structure
+
+A controlled experiment should compare positive, zero, and reversed output coupling for the same injected feature.
+
+This will test whether the destructive behavior comes mainly from:
+
+`too much gradient`
+
+or from:
+
+`gradient in the wrong direction`
+
+The central question becomes:
+
+> **Is harmful representation drift caused by the magnitude of the new-feature gradient, or by its directional alignment with the task?**
