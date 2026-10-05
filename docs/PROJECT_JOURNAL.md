@@ -7723,3 +7723,113 @@ Measure the hidden-gradient vectors produced by positive and negative gamma at t
 The goal is to connect:
 
 `gamma sign -> hidden gradient direction -> representation movement -> final success`
+
+## Experiment 074 — Hidden Gradient Measurement
+
+### Results
+
+Experiment 074 directly measured the batch-averaged gradient vectors for the two newly injected hidden neurons immediately after injection.
+
+For the complementary `0010|0100` structure, equal-magnitude gamma conditions produced substantially different gradient magnitudes:
+
+- strength 0.001:
+  - gamma = -1.00: 1373.07
+  - gamma = -0.50: 460.74
+  - gamma = +0.50: 48.56
+  - gamma = +1.00: 456.03
+- gamma = 0 produced exactly zero hidden gradient for the injected neurons.
+
+The direction was not a simple sign reversal.
+
+For gamma = -0.50 versus +0.50:
+
+- mean hidden-gradient cosine = -0.1383
+
+For gamma = -1.00 versus +1.00:
+
+- mean hidden-gradient cosine = 0.9703
+
+This means increasing the magnitude of the signed output coupling can cause the positive and negative conditions to become aligned again, even though their output couplings have opposite signs.
+
+The partial structure `0010|0111` showed the same general effect but with weaker alignment:
+
+- gamma = -0.50 vs +0.50: cosine = -0.0737
+- gamma = -1.00 vs +1.00: cosine = 0.7614
+
+The redundant `0010|0010` structure was especially unstable and produced extremely large gradients because both injected features represented the same structure.
+
+### Interpretation
+
+The result shows that changing output coupling does more than reverse the hidden-gradient direction.
+
+For a new hidden feature with output coupling `gamma`, the output prediction can be written conceptually as:
+
+`prediction = old_prediction + gamma * new_feature_contribution`
+
+Therefore the hidden gradient contains the output error produced by both the old network and the newly coupled feature.
+
+The gradient therefore has the form:
+
+`g(gamma) = gamma * A + gamma² * B`
+
+where:
+
+- `A` is the gradient driven by the pre-existing output error
+- `B` is the gradient created by the injected feature's own contribution to the output
+
+The odd component changes sign with gamma.
+
+The even component does not.
+
+This explains why small positive and negative gamma values can produce opposing hidden gradients, while larger values can become aligned.
+
+### Conclusion
+
+Experiment 074 directly connects output coupling to the hidden gradient itself.
+
+The mechanism is more specific than:
+
+`gamma sign -> gradient sign`
+
+The evidence instead suggests:
+
+`gamma -> output contribution -> output error -> hidden gradient`
+
+with both a sign-sensitive component and a self-induced component.
+
+### Next Direction
+
+Separate the hidden gradient into its odd and even components using matched `+gamma` and `-gamma` measurements.
+
+The goal is to test whether:
+
+`[g(+gamma) - g(-gamma)] / 2`
+
+isolates the external-error-driven component, while:
+
+`[g(+gamma) + g(-gamma)] / 2`
+
+isolates the self-induced component.
+
+## Experiment 075 — Gradient Decomposition
+
+### Question
+
+Can the hidden gradient be decomposed into an external-error component and a self-induced component?
+
+### Hypothesis
+
+For matched positive and negative output coupling:
+
+`g(gamma) = gamma*A + gamma²*B`
+
+Therefore:
+
+`odd component = [g(+gamma) - g(-gamma)] / 2`
+
+and:
+
+`even component = [g(+gamma) + g(-gamma)] / 2`
+
+The experiment should compare these components across gamma magnitude and feature structure.
+
