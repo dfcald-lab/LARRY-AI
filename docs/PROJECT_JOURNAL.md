@@ -7833,3 +7833,79 @@ and:
 
 The experiment should compare these components across gamma magnitude and feature structure.
 
+
+## Experiment 075 — Gradient Decomposition
+
+### Results
+
+Experiment 075 tested whether the hidden gradient produced by signed output coupling can be written as:
+
+`g(gamma) = gamma*A + gamma^2*B`
+
+Matched positive and negative gamma values were used to construct:
+
+`odd(gamma) = [g(+gamma) - g(-gamma)] / 2`
+
+and:
+
+`even(gamma) = [g(+gamma) + g(-gamma)] / 2`
+
+Across all three feature structures, all five feature strengths, and gamma magnitudes 0.25, 0.50, 1.00, and 2.00:
+
+- odd component cosine with linear gamma scaling = 1.000000000
+- even component cosine with quadratic gamma scaling = 1.000000000
+- odd relative error = 0.000000000
+- even relative error = 0.000000000
+- positive-gradient reconstruction error = 0.000000000
+- negative-gradient reconstruction error = 0.000000000
+
+The result held for complementary `0010|0100`, partial `0010|0111`, and redundant `0010|0010` structures.
+
+### Interpretation
+
+At the fixed post-injection state, the hidden gradient is exactly decomposable into a gamma-linear component and a gamma-squared component.
+
+The linear component is sign-sensitive:
+
+`gamma*A`
+
+The quadratic component is sign-insensitive:
+
+`gamma^2*B`
+
+This follows from the interaction between the output coupling and the output error. The output contribution of the injected features is linear in gamma, while the hidden gradient receives another factor of the output coupling.
+
+Therefore:
+
+`gamma -> output contribution -> output error -> hidden gradient`
+
+contains both first-order and second-order dependence on gamma.
+
+### Important Limitation
+
+This exact decomposition was demonstrated at the fixed injection state.
+
+It does not yet establish that the same decomposition remains valid throughout training. After an update, hidden weights and ReLU activation states can change, potentially changing the local gradient relationship.
+
+### Conclusion
+
+Experiment 075 provides a precise mathematical description of the initial hidden-gradient mechanism:
+
+`g(gamma) = gamma*A + gamma^2*B`
+
+The next question is whether this local gradient decomposition predicts the actual representation trajectory over subsequent updates.
+
+### Status
+
+**Experiment 075 complete.**
+
+### Next Direction
+
+Test whether the measured decomposition predicts the hidden representation movement after one or more gradient updates, and identify where ReLU state changes cause the local relationship to break.
+
+## Experiment 076 — Gradient-to-Trajectory Prediction
+
+### Question
+
+Can the initial hidden-gradient decomposition predict the actual representation movement after training updates?
+
