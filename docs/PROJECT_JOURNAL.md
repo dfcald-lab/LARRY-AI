@@ -7909,3 +7909,102 @@ Test whether the measured decomposition predicts the hidden representation movem
 
 Can the initial hidden-gradient decomposition predict the actual representation movement after training updates?
 
+#### 80-run hidden learning-rate validation across five strengths
+
+Tested complementary features (`0010|0100`) with output coupling gamma `+0.5` across 80 runs per condition (10 seeds × 8 initialization offsets). Compared normal training at learning rate `0.10` against hidden-only scaling. In the hidden-only condition, the two newly injected hidden neurons used a reduced learning rate calibrated to a 1% initial parameter-step ratio. Original network and output parameters continued using learning rate `0.10`. Each condition ran for 25 updates.
+
+| Strength | Training mode | Median loss @1 | Median loss @2 | Median loss @25 | Improved @25 | Both active @2 | Both active @25 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 0.001 | Normal | 1.07048e+07 | 494578 | 743.649 | 0/80 | 0/80 | 0/80 |
+| 0.001 | Hidden-only | 0.167996 | 0.161726 | 0.0421508 | 72/80 | 80/80 | 72/80 |
+| 0.01 | Normal | 1050.37 | 47.1479 | 0.583588 | 0/80 | 4/80 | 0/80 |
+| 0.01 | Hidden-only | 0.167996 | 0.161726 | 0.0421504 | 72/80 | 80/80 | 72/80 |
+| 0.10 | Normal | 0.273106 | 0.41276 | 0.361797 | 2/80 | 10/80 | 2/80 |
+| 0.10 | Hidden-only | 0.167995 | 0.161723 | 0.0421077 | 72/80 | 80/80 | 72/80 |
+| 1.0 | Normal | 0.165379 | 0.154356 | 0.0712903 | 80/80 | 80/80 | 80/80 |
+| 1.0 | Hidden-only | 0.167926 | 0.161378 | 0.0364253 | 77/80 | 80/80 | 72/80 |
+| 4.0 | Normal | 0.164025 | 0.149481 | 0.035215 | 80/80 | 80/80 | 80/80 |
+| 4.0 | Hidden-only | 0.166922 | 0.157983 | 0.0244886 | 72/80 | 80/80 | 72/80 |
+
+#### Partially overlapping feature validation across five strengths
+
+Tested partially overlapping features (`0010|0111`) with output coupling gamma `+0.5` across 80 runs per condition (10 seeds × 8 initialization offsets). Compared normal training at learning rate `0.10` against hidden-only scaling. In the hidden-only condition, only the two newly injected hidden neurons used a reduced learning rate calibrated to a 1% initial parameter-step ratio. The original network and output parameters continued using learning rate `0.10`. Each condition ran for 25 updates.
+
+| Strength | Training mode | Median loss @1 | Median loss @2 | Median loss @25 | Improved @25 | Both active @2 | Both active @25 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 0.001 | Normal | 0.663973 | 0.573338 | 0.499547 | 32/80 | 0/80 | 0/80 |
+| 0.001 | Hidden-only | 0.407037 | 0.381971 | 0.122238 | 80/80 | 80/80 | 80/80 |
+| 0.01 | Normal | 0.663973 | 0.573338 | 0.498528 | 32/80 | 0/80 | 0/80 |
+| 0.01 | Hidden-only | 0.407036 | 0.381969 | 0.122238 | 80/80 | 80/80 | 80/80 |
+| 0.10 | Normal | 0.485374 | 0.443843 | 0.377893 | 57/80 | 17/80 | 17/80 |
+| 0.10 | Hidden-only | 0.406891 | 0.381773 | 0.122217 | 80/80 | 80/80 | 80/80 |
+| 1.0 | Normal | 0.327266 | 0.309347 | 0.164426 | 80/80 | 74/80 | 74/80 |
+| 1.0 | Hidden-only | 0.425873 | 0.383881 | 0.125224 | 80/80 | 80/80 | 80/80 |
+| 4.0 | Normal | 0.377515 | 0.326613 | 0.194258 | 80/80 | 80/80 | 79/80 |
+| 4.0 | Hidden-only | 0.371674 | 0.324737 | 0.178703 | 80/80 | 80/80 | 79/80 |
+
+No runs produced non-finite values. “Improved” means epoch-25 loss was lower than injection loss. “Both active” means each new feature had a positive activation on at least one XOR example.
+
+**Finding:** At strengths `0.001`, `0.01`, and `0.10`, hidden-only scaling improved loss in all 80 runs and retained both features in all 80. Normal training was substantially less stable at these strengths. At strengths `1.0` and `4.0`, normal training improved in all 80 runs and retained both features in 74/80 and 79/80 runs, respectively. Hidden-only scaling had a lower median final loss at these strengths and retained both features in 80/80 and 79/80 runs.
+
+The advantage of hidden-only step-size control is strongest for weak injected features and narrows as the features get stronger. This result applies to the partially overlapping pattern and `gamma=+0.5`; it does not establish that the same behavior holds for all feature patterns.
+
+#### Redundant feature validation across five strengths
+
+Tested the redundant feature pattern (`0010|0010`) with output coupling gamma `+0.5` across 80 runs per condition (10 seeds × 8 initialization offsets). Compared normal training at learning rate `0.10` against hidden-only scaling. In the hidden-only condition, the two newly injected hidden neurons used a reduced learning rate calibrated to a 1% initial parameter-step ratio; the original network and output parameters continued using learning rate `0.10`. Each condition ran for 25 updates.
+
+| Strength | Training mode | Median loss @1 | Median loss @2 | Median loss @25 | Improved @25 | Both active @2 | Both active @25 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 0.001 | Normal | 7253.78 | 143.316 | 0.618357 | 32/80 | 16/80 | 16/80 |
+| 0.001 | Hidden-only | 0.381335 | 0.373712 | 0.290843 | 72/80 | 72/80 | 72/80 |
+| 0.01 | Normal | 79.0128 | 2.31688 | 0.500547 | 32/80 | 16/80 | 16/80 |
+| 0.01 | Hidden-only | 0.381335 | 0.373712 | 0.290842 | 72/80 | 72/80 | 72/80 |
+| 0.10 | Normal | 0.501343 | 0.499686 | 0.468826 | 36/80 | 20/80 | 20/80 |
+| 0.10 | Hidden-only | 0.381335 | 0.373691 | 0.290763 | 72/80 | 72/80 | 72/80 |
+| 1.0 | Normal | 0.376569 | 0.359030 | 0.328290 | 80/80 | 71/80 | 71/80 |
+| 1.0 | Hidden-only | 0.381271 | 0.372596 | 0.288012 | 74/80 | 72/80 | 72/80 |
+| 4.0 | Normal | 0.372652 | 0.360841 | 0.292257 | 80/80 | 72/80 | 72/80 |
+| 4.0 | Hidden-only | 0.374671 | 0.352495 | 0.292851 | 76/80 | 72/80 | 72/80 |
+
+No runs produced non-finite values. “Improved” means the epoch-25 loss was lower than the injection loss. “Both active” means each injected neuron activated positively on at least one XOR example.
+
+**Finding:** At strengths `0.001`, `0.01`, and `0.10`, hidden-only scaling improved in 72/80 runs and retained both neurons in 72/80, while normal training improved in 32/80, 32/80, and 36/80 runs respectively. At strength `1.0`, normal training improved in all 80 runs and retained both neurons in 71/80; hidden-only scaling improved in 74/80 and retained both in 72/80. At strength `4.0`, normal training improved in all 80 runs, versus 76/80 for hidden-only scaling, and both methods retained both neurons in 72/80 runs. Final median losses at strength `4.0` were nearly identical, with normal training slightly lower.
+
+The advantage of hidden-only step-size control is strongest for weak injected features and narrows as feature strength increases. The two neurons are redundant by construction, so their activity does not establish that the model has learned distinct useful features.
+
+#### Output coupling validation — complete
+
+Completed the 80-run-per-mode coupling sweep for complementary features (`0010|0100`) at feature strength `0.001`. Each condition used 10 seeds, 8 initialization offsets, base learning rate `0.10`, and 25 updates. Hidden-only scaling calibrated the learning rate of the two new hidden neurons to a 1% initial parameter-step ratio when their initial hidden-gradient norm was nonzero.
+
+| Gamma | Mode | Median loss @1 | @2 | @25 | Improved @25 | Both active @25 |
+|---:|---|---:|---:|---:|---:|---:|
+| -1.0 | Normal | 0.463685 | 0.443573 | 0.410375 | 80/80 | 0/80 |
+| -1.0 | Hidden-only | 1.82093 | 1.64408 | 0.747832 | 80/80 | 80/80 |
+| -0.5 | Normal | 0.439710 | 0.433933 | 0.410748 | 80/80 | 0/80 |
+| -0.5 | Hidden-only | 0.920845 | 0.871791 | 0.537147 | 80/80 | 80/80 |
+| 0.0 | Normal | 0.432190 | 0.431177 | 0.411278 | 80/80 | 80/80 |
+| 0.0 | Hidden-only | 0.432190 | 0.431177 | 0.411278 | 80/80 | 80/80 |
+| +0.0625 | Normal | 324129 | 6260.99 | 11.0121 | 0/80 | 0/80 |
+| +0.0625 | Hidden-only | 0.377343 | 0.375182 | 0.338592 | 80/80 | 80/80 |
+| +0.125 | Normal | 3.97434e+06 | 83396.9 | 87.2579 | 0/80 | 0/80 |
+| +0.125 | Hidden-only | 0.329283 | 0.325440 | 0.272495 | 80/80 | 80/80 |
+| +0.25 | Normal | 2.90772e+07 | 767382 | 2855.23 | 0/80 | 0/80 |
+| +0.25 | Hidden-only | 0.257819 | 0.250304 | 0.169565 | 80/80 | 80/80 |
+| +0.5 | Normal | 1.07048e+07 | 494578 | 743.649 | 0/80 | 0/80 |
+| +0.5 | Hidden-only | 0.167996 | 0.161726 | 0.0421508 | 72/80 | 72/80 |
+| +1.0 | Normal | 0.467301 | 0.446722 | 0.412447 | 48/80 | 0/80 |
+| +1.0 | Hidden-only | 0.268516 | 0.163319 | 0.0211696 | 80/80 | 80/80 |
+
+“Improved” means epoch-25 loss was lower than loss at injection. “Both active” means each new feature activated positively on at least one XOR example at the checkpoint. No runs produced non-finite values.
+
+**Findings**
+
+1. **The instability depends strongly on output coupling.** Normal training had severe loss explosions at positive gamma values from `+0.0625` through `+0.5`, but not at `0` or `+1.0`. This is a non-monotonic result for the tested conditions, not proof of a universal threshold.
+
+2. **Hidden-only scaling prevented those explosions in this sweep.** At `+0.0625`, `+0.125`, and `+0.25`, it improved the loss and retained both new features in all 80 runs. At `+0.5`, both outcomes occurred in 72/80 runs.
+
+3. **Feature survival does not guarantee lower task loss.** At negative gamma values, hidden-only scaling retained both features but had worse median final loss than normal training. At `gamma=0`, the initial hidden-gradient norm was zero, so the hidden-only learning rate was also zero; that condition is a control, not an ordinary nonzero-rate comparison.
+
+**Conclusion:** Relative step-size control is a useful stabilization method for the tested weak injected features, but its effect on task loss depends on output coupling. Feature activity, loss improvement, and final loss should be evaluated separately.
+
+**Status: Coupling validation complete.** No further gamma sweep is planned in this pass. The results are specific to the tested feature pattern, strength, training budget, and coupling values; the exact instability boundary and underlying mechanism have not been established.
