@@ -8569,3 +8569,124 @@ This is evidence that local character history helps predict the next character i
 ### Status
 
 **Experiment 081 complete.** All nine checks passed. Context 3 achieved 324/572 correct predictions (56.6%). Results apply to this corpus and do not establish general performance on unrelated text.
+
+## Experiment 082 — Public-Domain Text
+
+### Research Question
+
+Do the improvements from longer character context continue when Larry is evaluated on a real book, using later chapters that were not used to build the transition counts?
+
+### Source and Data Preparation
+
+The experiment uses *Alice's Adventures in Wonderland* by Lewis Carroll, downloaded as plain text from Project Gutenberg, ebook 11:
+
+https://www.gutenberg.org/ebooks/11
+
+The original downloaded file is `alice_wonderland.txt`. The text files are kept locally and excluded from Git using the experiment folder's `.gitignore`.
+
+The preparation script, `prepare_data.py`, reconstructs the datasets from the original download. It locates the Project Gutenberg book markers, extracts the 12 chapters, removes chapter headings and titles, and removes two bracketed editorial insertions.
+
+The data is split by complete chapters:
+
+- Training: Chapters I–VIII.
+- Held-out evaluation: Chapters IX–XII.
+
+The vocabulary is built from training text only. The preparation check found zero characters in the held-out text that were absent from the training text.
+
+The latest preparation produced 97,377 training characters and 45,311 held-out characters before the experiment script's file-reading counts include the final newline in each file.
+
+The experiment uses 480 training paragraphs and 317 held-out paragraphs. Each paragraph is handled as a separate sequence, so transitions are not counted across paragraph boundaries.
+
+### Models
+
+Four approaches were compared:
+
+- Most-common-character baseline.
+- Context 1: predicts from the preceding character.
+- Context 2: uses up to two preceding characters.
+- Context 3: uses up to three preceding characters.
+
+The context models back off to shorter observed contexts when a longer context has not been seen in training.
+
+This is a count-based statistical experiment. It does not use neural-network parameters, embeddings, gradient-based training, or semantic representations.
+
+### Tests
+
+Nine checks passed:
+
+1. Training and held-out paragraphs are present.
+2. All held-out characters exist in the training vocabulary.
+3. Training counts do not cross paragraph boundaries.
+4. Next-character probabilities sum to one.
+5. The global fallback works without preceding context.
+6. Predictions use valid vocabulary IDs.
+7. Context 1 evaluates every held-out target.
+8. Context 2 evaluates every held-out target.
+9. Context 3 evaluates every held-out target.
+
+The separate preparation script also verified all 12 chapters, confirmed the intended chapter split, and found zero unseen held-out characters.
+
+### Results
+
+The final experiment evaluated 44,362 held-out next-character targets.
+
+| Model | Correct predictions | Held-out accuracy |
+|---|---:|---:|
+| Most-common-character baseline | 7,847/44,362 | 17.69% |
+| Context 1 | 13,593/44,362 | 30.64% |
+| Context 2 | 19,555/44,362 | 44.08% |
+| Context 3 | 23,560/44,362 | 53.11% |
+
+The context-1 model used one-character context for all 44,362 predictions.
+
+The context-2 model used two-character context for 43,853 predictions and backed off to one character for 509.
+
+The context-3 model used three-character context for 42,175 predictions, two-character context for 1,678, and one-character context for 509.
+
+### Findings
+
+**1. Longer context improved held-out accuracy.**
+
+Accuracy rose from 30.64% with context 1 to 44.08% with context 2 and 53.11% with context 3.
+
+**2. Every context model outperformed the baseline.**
+
+The most-common-character baseline achieved 17.69%. Each context model achieved higher accuracy, showing that preceding characters provide useful predictive information in this book.
+
+**3. The trend from Experiments 080 and 081 continued.**
+
+Context 3 performed best among the three tested context lengths. The result supports continuing to investigate how context affects next-character prediction.
+
+**4. Backoff helped with unseen contexts.**
+
+The context-2 and context-3 models could use shorter observed contexts whenever the longer context was not available in training.
+
+**5. Larry learned local patterns, not demonstrated story understanding.**
+
+The experiment measures character prediction accuracy. It does not test comprehension, reasoning, or semantic understanding.
+
+### Limitations
+
+The evaluation uses later chapters of one book. Training and held-out chapters are separated, but they belong to the same work and share language, characters, and subject matter.
+
+The prediction targets are not independent observations. Many come from the same paragraphs and repeating character patterns.
+
+The model is a count-based character predictor. It does not learn neural representations or optimize a neural-network loss function.
+
+Only context lengths 1, 2, and 3 were compared. The results do not establish the best context length for general language modeling.
+
+The input text is not included in the Git commit. A fresh checkout needs the original downloaded text file in this folder before `prepare_data.py` can rebuild the datasets.
+
+### Conclusion
+
+Experiment 082 showed that longer character context continued to improve held-out next-character prediction on a real book.
+
+Context 3 achieved 53.11% accuracy across 44,362 targets from Chapters IX–XII, compared with 44.08% for context 2, 30.64% for context 1, and 17.69% for the baseline.
+
+The result is stronger evidence than the small hand-written corpora used in earlier experiments, but it remains evidence about one book and one character-level prediction task.
+
+The next stage should investigate a trainable neural model rather than continuing indefinitely with transition counts. Larry now has a tokenizer, reproducible text preparation, a statistical baseline, and held-out evaluation results to compare against future neural models.
+
+### Status
+
+**Experiment 082 complete.** The data-preparation check passed, all nine model checks passed, and context 3 achieved 23,560/44,362 correct predictions (53.11%). The input text remains local and is excluded from Git.
