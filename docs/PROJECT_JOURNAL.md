@@ -8483,3 +8483,89 @@ The results support investigating longer context, but they do not establish that
 ### Status
 
 **Experiment 080 complete.** All six tests passed. The best measured result was 88/106 correct predictions (83.0%) with a maximum context of three characters. Generalization beyond this small held-out set remains uncertain.
+
+## Experiment 081 — Larger Text Corpus
+
+### Research Question
+
+Does the improvement from longer character contexts continue on a larger corpus with held-out sentences that are not used to build the transition counts?
+
+### Setup
+
+The experiment uses a local, original text corpus split into two files:
+
+- Training data: 37 sentences and 1,849 characters.
+- Held-out data: 12 sentences and 584 characters.
+
+The vocabulary was built from training text only. All held-out characters were present in the training vocabulary.
+
+Three count-based models were compared. They use maximum context lengths of one, two, and three characters. If a context was not observed during training, the model tries a shorter context. The baseline always predicts the most common next character in the training transitions.
+
+Evaluation treats each sentence as a separate sequence so that character transitions are not counted across sentence boundaries. The held-out set contains 572 next-character prediction targets.
+
+### Tests
+
+Nine checks passed:
+
+1. Training and held-out sentences do not overlap.
+2. All held-out characters exist in the training vocabulary.
+3. Training transition counts do not cross sentence boundaries.
+4. Next-character probabilities sum to one.
+5. The global fallback works with no preceding context.
+6. Predictions use valid vocabulary IDs.
+7. Context 1 evaluates every held-out target.
+8. Context 2 evaluates every held-out target.
+9. Context 3 evaluates every held-out target.
+
+### Results
+
+| Model | Correct predictions | Held-out accuracy |
+|---|---:|---:|
+| Most-common-character baseline | 92/572 | 16.1% |
+| Context 1 | 171/572 | 29.9% |
+| Context 2 | 251/572 | 43.9% |
+| Context 3 | 324/572 | 56.6% |
+
+The context-1 model used one-character context for all 572 predictions.
+
+The context-2 model used two-character context for 558 predictions and backed off to one character for 14.
+
+The context-3 model used three-character context for 495 predictions, two-character context for 63, and one-character context for 14.
+
+### Findings
+
+**1. Longer context again improved held-out accuracy.**
+
+Accuracy increased from 29.9% with context 1 to 43.9% with context 2 and 56.6% with context 3.
+
+**2. All context models outperformed the baseline.**
+
+The most-common-character baseline achieved 16.1%, lower than all three context models. The preceding characters provide useful predictive information for this dataset.
+
+**3. The context-length trend from Experiment 080 continued.**
+
+Context 3 performed best among the tested models in both experiments. This supports further investigation of longer contexts, but it does not establish that three characters is generally optimal.
+
+**4. Backoff made unseen contexts manageable.**
+
+The context-2 and context-3 models could fall back to shorter contexts when longer patterns were absent from training.
+
+### Limitations
+
+The corpus is original, hand-written text rather than a broad sample of natural language. The 12 held-out sentences are separate from the training sentences, but the two sets share vocabulary and subject matter.
+
+The 572 targets come from only 12 sentences and are not independent observations. Accuracy therefore should not be interpreted as a general estimate of language-model performance.
+
+The models count character transitions. They do not use neural networks, embeddings, gradient-based training, or semantic representations.
+
+The experiment tests only context lengths 1, 2, and 3. It does not establish the best context length for larger datasets.
+
+### Conclusion
+
+Experiment 081 found that longer character context continued to improve held-out prediction accuracy on a larger original corpus. Context 3 achieved 56.6%, compared with 43.9% for context 2, 29.9% for context 1, and 16.1% for the baseline.
+
+This is evidence that local character history helps predict the next character in the tested text. Broader natural-language evaluation is still needed.
+
+### Status
+
+**Experiment 081 complete.** All nine checks passed. Context 3 achieved 324/572 correct predictions (56.6%). Results apply to this corpus and do not establish general performance on unrelated text.
