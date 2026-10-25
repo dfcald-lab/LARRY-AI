@@ -8008,3 +8008,91 @@ Completed the 80-run-per-mode coupling sweep for complementary features (`0010|0
 **Conclusion:** Relative step-size control is a useful stabilization method for the tested weak injected features, but its effect on task loss depends on output coupling. Feature activity, loss improvement, and final loss should be evaluated separately.
 
 **Status: Coupling validation complete.** No further gamma sweep is planned in this pass. The results are specific to the tested feature pattern, strength, training budget, and coupling values; the exact instability boundary and underlying mechanism have not been established.
+
+#### First-update mechanism diagnostic
+
+Measured one initialization (seed `0`, offset `0`) with complementary features (`0010|0100`), strength `0.001`, and base learning rate `0.10`. This was a single-run diagnostic, not an 80-run validation.
+
+| Gamma | Initial hidden-gradient norm | Predicted step / initial parameter norm | Loss before | Loss after first update | Actual step / initial parameter norm | Active counts before → after |
+|---:|---:|---:|---:|---:|---:|---|
+| 0.0000 | 0 | 0% | 0.3352 | 0.3350 | 0% | `[1, 1]` → `[1, 1]` |
+| 0.0625 | 17.88 | 78,380% | 0.2967 | 59,950 | 78,380% | `[1, 1]` → `[4, 1]` |
+| 0.1250 | 31.92 | 140,000% | 0.2622 | 765,000 | 140,000% | `[1, 1]` → `[4, 1]` |
+| 0.2500 | 48.53 | 212,800% | 0.2049 | 7,072,000 | 212,800% | `[1, 1]` → `[4, 1]` |
+| 0.5000 | 35.78 | 156,900% | 0.1372 | 15,380,000 | 156,900% | `[1, 1]` → `[4, 1]` |
+| 1.0000 | 173.5 | 760,900% | 0.1892 | 0.3359 | 760,900% | `[1, 1]` → `[0, 1]` |
+
+The step ratio compares the update norm of the two new hidden neurons' weights and biases with their combined initial parameter norm. Active counts show the number of XOR examples activating each new feature.
+
+**Finding:** In this initialization, the four intermediate positive coupling values produced enormous loss increases on the first update, alongside parameter steps many times larger than the initial hidden-parameter norm. At gamma `+1.0`, the hidden step was even larger proportionally, but the loss rose only from `0.1892` to `0.3359`, and one feature became inactive. At gamma `0`, the new hidden neurons received zero gradient and did not move.
+
+This confirms that update size alone does not explain the entire coupling-dependent behavior. The direction of the update and changes to ReLU activation states also matter. One initialization cannot establish why the 80-run results differ; the next diagnostic should trace several consecutive updates at already-tested gamma values, with no new coupling sweep.
+
+## Experiment 076 — Single-Initialization Trajectory Trace
+
+### Purpose
+
+Inspect the actual training trajectory after feature injection and compare ordinary training with hidden-only learning-rate scaling.
+
+This diagnostic uses one initialization:
+- Seed: 0
+- Initialization offset: 0
+- Feature pattern: `0010|0100`
+- Feature strength: `0.001`
+- Base learning rate: `0.10`
+- Checkpoints: updates 0, 1, 2, 3, 5, 10, and 25
+
+The tested output couplings were 0, +0.125, +0.5, and +1.0. These values were chosen from previously tested conditions.
+
+### Results
+
+| Coupling | Training mode | Loss at update 1 | Loss at update 25 | Hidden movement at update 25 | Feature pattern at update 25 |
+|---:|---|---:|---:|---:|---|
+| 0.000 | Normal | 0.335045 | 0.334188 | 2.799% | `1010|0100` |
+| 0.000 | Hidden-only | 0.335045 | 0.334188 | 0% | `0010|0100` |
+| +0.125 | Normal | 765,016 | 54.8635 | 5.803e8% | `0000|0000` |
+| +0.125 | Hidden-only | 0.259721 | 0.215777 | 18.28% | `1010|0100` |
+| +0.500 | Normal | 1.53763e7 | 1,088.82 | 1.041e10% | `0000|0000` |
+| +0.500 | Hidden-only | 0.131354 | 0.0486186 | 14.83% | `0010|0100` |
+| +1.000 | Normal | 0.335934 | 0.334048 | 7.609e5% | `0000|0100` |
+| +1.000 | Hidden-only | 0.150935 | 0.0354458 | 3.756% | `0010|0100` |
+
+Hidden movement is the cumulative displacement of the two new hidden neurons' weights and biases, expressed as a percentage of their initial parameter norm. It does not measure output-layer movement.
+
+The hidden-only learning rate was calibrated to a 1% initial parameter-step ratio. The original hidden neurons and output parameters continued training at the base learning rate. At coupling 0, the new features' initial hidden gradient was zero, so their calibrated learning rate was also zero.
+
+### What the trace reveals
+
+**1. The initial gradient is a local prediction, not a reliable long-term trajectory.**
+
+At couplings +0.125 and +0.5, ordinary training produced enormous first-update loss increases. The new feature activation patterns changed immediately, and by update 3 both injected features were inactive.
+
+**2. Large parameter movement does not necessarily mean useful representation movement.**
+
+Once a ReLU feature becomes inactive for every training example, its gradient can disappear. The network may have moved a huge distance in parameter space while losing the feature's contribution to the predictions.
+
+**3. The behavior is not monotonic in output coupling.**
+
+Coupling +1.0 also caused a large hidden-parameter displacement, but its loss trajectory differed sharply from the +0.125 and +0.5 cases. This single trace does not support a rule that larger coupling always produces a larger loss explosion.
+
+**4. Hidden-only scaling stabilized the tested trajectories.**
+
+At +0.125 and +0.5, the loss decreased steadily over 25 updates instead of exploding. At +1.0, the injected feature patterns remained intact and the loss reached 0.0354458.
+
+However, none of these runs reached the success threshold of `1e-6` within 25 updates. Stability is not the same as solving XOR.
+
+### Limitations
+
+This is a single-seed diagnostic. It illustrates the mechanism but cannot establish how frequently each trajectory occurs across initializations. The broader 80-run validations for feature strength, feature structure, and output coupling are recorded in the preceding Experiment 076 sections.
+
+### Conclusion
+
+The evidence supports a more specific hypothesis than gradient magnitude alone:
+
+The initial update interacts with tiny hidden parameters, the output-layer state, and ReLU activation boundaries. Those changes can alter the gradient pathway after one update. Controlling the learning rate of the newly injected hidden neurons can reduce this instability in the tested conditions.
+
+The next research question is whether early activation-pattern transitions and relative hidden-parameter movement can predict trajectory failure across multiple initializations, before the loss explosion occurs.
+
+### Status
+
+**Single-initialization trajectory trace complete.** Results documented; no new broad sweep performed.
