@@ -108,6 +108,12 @@ Examine representation stability, output initialization and coupling, hidden-lay
 - [076 — Gradient To Trajectory](../experiments/076_gradient_to_trajectory/)
 - [077 — Early Warning Signals](../experiments/077_early_warning_signals/) — Tests whether early loss changes, parameter movement, and ReLU activation patterns are associated with later instability across 320 runs. The relationships vary by output coupling; no universal predictor was established.
 
+## Language Model Foundations
+
+Begin building the components Larry needs to learn from text.
+
+- [078 — Character Tokenization](../experiments/078_character_tokenization/) — Converts characters into deterministic integer IDs, reconstructs known text, and handles unknown characters. All five tests passed.
+
 ## How to Use This Index
 
 Open an experiment folder to inspect its script and any supporting files. Read the corresponding journal section for the research question, experimental setup, results, and interpretation.

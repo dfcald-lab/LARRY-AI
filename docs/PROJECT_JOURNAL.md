@@ -8209,3 +8209,94 @@ These measurements are useful clues, but a general early warning rule has not be
 ### Status
 
 **Experiment 077 complete.** All 320 runs finished with no non-finite runs. Results and limitations documented.
+
+## Experiment 078 — Character Tokenization
+
+### Research Question
+
+Can Larry convert text into integer token IDs and reconstruct known text exactly, while handling characters that were not present in its training vocabulary?
+
+### Setup
+
+A small text corpus was used to construct a character-level tokenizer.
+
+The tokenizer assigns each distinct training character a deterministic integer ID. Characters are sorted before IDs are assigned, so the vocabulary mapping does not depend on the order of the training text.
+
+Token ID `0` is reserved for the unknown token, `<UNK>`. All known characters receive IDs starting at `1`.
+
+The tokenizer implements two operations:
+
+- `encode(text)`: converts each character into an integer token ID.
+- `decode(token_ids)`: reconstructs text from token IDs and rejects invalid IDs.
+
+This experiment implements tokenization only. It does not train a model or predict text.
+
+### Tests
+
+Five checks were performed:
+
+1. Known text reconstructs exactly after encoding and decoding.
+2. Reversing the training text does not change the vocabulary mapping.
+3. Unseen characters map to the unknown-token ID.
+4. Unknown tokens remain visibly marked when decoded.
+5. Invalid token IDs are rejected.
+
+### Results
+
+All five tests passed.
+
+| Measurement | Result |
+|---|---:|
+| Characters in corpus | 106 |
+| Distinct training characters | 21 |
+| Vocabulary size, including `<UNK>` | 22 |
+| Encoded sequence length | 106 |
+| Tests passed | 5/5 |
+
+The sample text `larry learns from text.` was encoded into 23 integer IDs and reconstructed without changing any characters.
+
+The unseen-character example `Larry 😊` encoded the uppercase `L` and emoji as unknown tokens. Decoding produced `<UNK>arry <UNK>`.
+
+### Findings
+
+**1. Text can be represented numerically.**
+
+Each character in the corpus was converted into an integer, creating a sequence that a learning algorithm can consume.
+
+**2. Known text can be reconstructed exactly.**
+
+The encoding and decoding operations preserved the complete training corpus, including spaces, punctuation, and newline characters.
+
+**3. Vocabulary construction is reproducible.**
+
+Sorting the unique characters produced the same mapping even when the training text was reversed.
+
+**4. Unknown characters need an explicit policy.**
+
+The tokenizer maps unseen characters to ID `0`. This avoids an encoding failure, but the original unknown character cannot be recovered from that ID alone.
+
+**5. Tokenization is not learning.**
+
+The tokenizer assigns IDs according to fixed rules. It has not learned relationships between characters, predicted a next character, or generated new text.
+
+### Limitations
+
+The experiment uses a small, hand-written corpus rather than a larger text dataset.
+
+Character-level tokenization produces one token per character. This is simple to inspect but can create long input sequences.
+
+The unknown-token policy loses the identity of unseen characters. The vocabulary is also limited to the characters present in the training corpus.
+
+No neural network, training loop, loss function, or next-character prediction was implemented in this experiment.
+
+### Conclusion
+
+Experiment 078 successfully established a character-level text representation for Larry.
+
+The implementation converts text into integer sequences, reconstructs known text exactly, assigns deterministic vocabulary IDs, handles unseen characters, and rejects invalid token IDs.
+
+The next step is to use these token sequences to build training examples in which preceding characters provide the input and the next character provides the target.
+
+### Status
+
+**Experiment 078 complete.** All five tests passed. Character tokenization and its limitations are documented.
