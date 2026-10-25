@@ -4,7 +4,7 @@ This index links to the numbered experiments in LARRY-AI. The sequence records t
 
 For detailed methods, results, limitations, and conclusions, see the [Project Journal](PROJECT_JOURNAL.md).
 
-**Total: 76 numbered experiments.**
+**Total: 77 numbered experiments.**
 
 ## Phase 1 — Neural-Network Foundations
 
@@ -106,6 +106,7 @@ Examine representation stability, output initialization and coupling, hidden-lay
 - [074 — Hidden Gradient Measurement](../experiments/074_hidden_gradient_measurement/)
 - [075 — Gradient Decomposition](../experiments/075_gradient_decomposition/)
 - [076 — Gradient To Trajectory](../experiments/076_gradient_to_trajectory/)
+- [077 — Early Warning Signals](../experiments/077_early_warning_signals/) — Tests whether early loss changes, parameter movement, and ReLU activation patterns are associated with later instability across 320 runs. The relationships vary by output coupling; no universal predictor was established.
 
 ## How to Use This Index
 

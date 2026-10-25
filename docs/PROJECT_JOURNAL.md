@@ -8096,3 +8096,116 @@ The next research question is whether early activation-pattern transitions and r
 ### Status
 
 **Single-initialization trajectory trace complete.** Results documented; no new broad sweep performed.
+
+## Experiment 077 — Early Warning Signals
+
+### Research Question
+
+Can measurements taken at injection time or after the first update help explain later training instability across different initializations?
+
+### Setup
+
+- Feature pattern: complementary features, `0010|0100`
+- Feature strength: `0.001`
+- Base learning rate: `0.10`
+- Output couplings: `0.0`, `+0.125`, `+0.5`, and `+1.0`
+- Initializations per coupling: 80 (10 seeds × 8 initialization offsets)
+- Training budget: 25 updates
+- Total: 320 runs
+- Training mode: ordinary training at the original learning rate
+
+The coupling values and feature configuration were drawn from previously studied conditions. No new coupling sweep was performed.
+
+### Measurements and Definitions
+
+The predicted initial step percentage is the norm of the learning-rate-scaled, averaged gradient for the two new hidden neurons, divided by their combined initial parameter norm.
+
+Actual first-update hidden movement is measured using the same parameter norm after the first update.
+
+The two measurements should agree closely in ordinary gradient descent because the first update applies the gradient evaluated at the initial state. They are not independent warning signals.
+
+A later loss escalation is recorded when the maximum loss during updates 2–25 exceeds:
+
+`max(10 × injection loss, injection loss + 1.0)`
+
+A feature is considered inactive when its ReLU activation is zero, within the existing activation-pattern threshold, for all four XOR training examples.
+
+### Results by Coupling
+
+| Coupling | Runs | Later escalation | Non-finite runs | Median injection loss | Median update-1 loss ratio | Median future maximum loss | Median final loss | Median predicted step | Median update-1 movement | Median pattern flips | At least one feature inactive at update 25 | Both inactive at update 25 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0.000 | 80 | 0/80 | 0/80 | 0.4332 | 0.9996 | 0.4312 | 0.4113 | 0% | 0% | 0 | 0/80 | 0/80 |
+| +0.125 | 80 | 80/80 | 0/80 | 0.3339 | 1.011e7 | 8.34e4 | 87.26 | 2.815e5% | 2.815e5% | 5 | 80/80 | 80/80 |
+| +0.500 | 80 | 72/80 | 0/80 | 0.2271 | 4.886e7 | 4.946e5 | 743.6 | 1.609e5% | 1.609e5% | 80/80 | 72/80 |
+| +1.000 | 80 | 0/80 | 0/80 | 0.4993 | 1.007 | 0.4467 | 0.4124 | 2.241e6% | 2.241e6% | 2 | 80/80 | 48/80 |
+
+Parameter movement percentages are relative to the initial norm of the two newly injected neurons' weights and biases. Very large percentages arise because the injected parameters begin with very small norms.
+
+### Within-Coupling Correlations
+
+The following are Spearman rank correlations. Each value is calculated within the stated coupling group, rather than pooling different couplings together.
+
+| Coupling | Early measurement | Future maximum loss | Number of inactive features at update 25 |
+|---:|---|---:|---:|
+| 0.000 | Predicted step percentage | N/A | N/A |
+| 0.000 | Update-1 loss ratio | 0.1959 | N/A |
+| 0.000 | Actual update-1 movement | N/A | N/A |
+| 0.000 | Update-1 pattern Hamming distance | N/A | N/A |
+| 0.000 | Number of inactive features after update 1 | N/A | N/A |
+| +0.125 | Predicted step percentage | 0.6900 | N/A |
+| +0.125 | Update-1 loss ratio | 0.7797 | N/A |
+| +0.125 | Actual update-1 movement | 0.6900 | N/A |
+| +0.125 | Update-1 pattern Hamming distance | 0.6947 | N/A |
+| +0.125 | Number of inactive features after update 1 | -0.2093 | N/A |
+| +0.500 | Predicted step percentage | 0.6206 | 0.5197 |
+| +0.500 | Update-1 loss ratio | 0.5791 | 0.5197 |
+| +0.500 | Actual update-1 movement | 0.6206 | 0.5197 |
+| +0.500 | Update-1 pattern Hamming distance | 0.3853 | 0.5976 |
+| +0.500 | Number of inactive features after update 1 | -0.02244 | -0.2182 |
+| +1.000 | Predicted step percentage | 0.3717 | 0.4972 |
+| +1.000 | Update-1 loss ratio | -0.3162 | -0.7090 |
+| +1.000 | Actual update-1 movement | 0.3717 | 0.4972 |
+| +1.000 | Update-1 pattern Hamming distance | 0.5673 | 1.000 |
+| +1.000 | Number of inactive features after update 1 | 0.5673 | 1.000 |
+
+N/A means the correlation could not be calculated because one of the measurements had no variation across the runs.
+
+### Findings
+
+**1. Later loss escalation depends strongly on output coupling.**
+
+All 80 runs escalated at `+0.125`, and 72 of 80 escalated at `+0.5`. No runs escalated at `0.0` or `+1.0` under the specified threshold. This is a non-monotonic result for the tested conditions, not a universal instability rule.
+
+**2. First-update loss was associated with later loss severity in some conditions.**
+
+The update-1 loss ratio had a Spearman correlation of `0.7797` with future maximum loss at `+0.125`, and `0.5791` at `+0.5`. At `+1.0`, the correlation was `-0.3162`, showing that the relationship changed with coupling.
+
+**3. Activation-pattern changes provided additional evidence, but not a universal predictor.**
+
+At `+0.125`, pattern Hamming distance correlated with future maximum loss at `0.6947`. At `+0.5`, the correlation was `0.3853`. At `+1.0`, it was `0.5673`.
+
+At `+1.0`, update-1 pattern Hamming distance and the number of inactive features after update 1 each had a correlation of `1.0` with the final number of inactive features. This is a perfect rank association in these runs, not proof that the relationship will generalize.
+
+**4. First-update movement and predicted step size are redundant measurements here.**
+
+Their matching values are expected when the ordinary training update applies the gradient used for the prediction. Their agreement validates the measurement procedure but does not provide two independent predictors.
+
+**5. Loss stability is not feature survival.**
+
+At `+1.0`, no run met the later escalation threshold, but all 80 runs had at least one inactive injected feature by update 25. A useful early warning system must distinguish loss escalation from loss of feature activity.
+
+### Limitations
+
+This experiment uses one feature pattern and one feature strength. Correlations are descriptive associations within each coupling group; they are not a trained predictor and do not establish causation. The experiment did not use held-out initializations to evaluate predictive performance.
+
+The results do not establish a universal threshold for instability, nor do they show that early measurements alone can reliably identify future failure across new feature configurations.
+
+### Conclusion
+
+Experiment 077 found that early loss changes, initial update size, and ReLU activation-pattern transitions are associated with later training behavior in some tested conditions. The strength and even direction of these associations depend on output coupling.
+
+These measurements are useful clues, but a general early warning rule has not been established. The next decision should avoid an open-ended sweep: either run one bounded replication on an already-studied feature configuration or close this research phase and move toward the language-model foundations in the project plan.
+
+### Status
+
+**Experiment 077 complete.** All 320 runs finished with no non-finite runs. Results and limitations documented.
