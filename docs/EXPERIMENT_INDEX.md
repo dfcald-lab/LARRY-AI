@@ -113,6 +113,7 @@ Examine representation stability, output initialization and coupling, hidden-lay
 Begin building the components Larry needs to learn from text.
 
 - [078 — Character Tokenization](../experiments/078_character_tokenization/) — Converts characters into deterministic integer IDs, reconstructs known text, and handles unknown characters. All five tests passed.
+- [079 — Character Bigram Model](../experiments/079_character_bigram_model/) — Learns next-character probabilities from adjacent-character counts. Achieved 49.5% training accuracy versus 13.3% for the most-common-character baseline; generalization remains untested.
 
 ## How to Use This Index
 

@@ -8300,3 +8300,96 @@ The next step is to use these token sequences to build training examples in whic
 ### Status
 
 **Experiment 078 complete.** All five tests passed. Character tokenization and its limitations are documented.
+
+## Experiment 079 — Character Bigram Model
+
+### Research Question
+
+Can Larry learn next-character patterns by counting which characters follow other characters in a training corpus?
+
+### Setup
+
+Experiment 078 supplies the character tokenizer. Experiment 079 uses its vocabulary and encodes the same 106-character corpus.
+
+A character bigram model records counts of adjacent token pairs. For each preceding character, the model estimates a probability distribution over the characters observed immediately after it.
+
+The model predicts the most frequent next character for a given context. If the context has no recorded transitions, it falls back to the overall next-character frequency distribution.
+
+Generation uses greedy prediction: the most probable next character is selected at each step. Ties are resolved deterministically.
+
+This model learns from observed counts. It does not use a neural network, embeddings, or gradient-based training.
+
+### Tests
+
+Five checks were performed:
+
+1. Every adjacent character pair contributes one transition observation.
+2. Predicted next-character probabilities sum to one.
+3. Predictions return valid vocabulary IDs.
+4. Unseen contexts use the fallback distribution.
+5. Generation preserves the input prefix and produces the requested number of additional tokens.
+
+All five tests passed.
+
+### Results
+
+| Measurement | Result |
+|---|---:|
+| Training corpus characters | 106 |
+| Vocabulary size, including unknown token | 22 |
+| Adjacent-pair observations | 105 |
+| Preceding characters with recorded transitions | 21 |
+| Bigram-model training accuracy | 52/105 (49.5%) |
+| Most-common-character baseline accuracy | 14/105 (13.3%) |
+
+The training accuracy is the fraction of next-character targets for which the model's greedy prediction matched the observed next character. Predictions were evaluated on the same corpus used to construct the transition counts.
+
+The baseline predicts the globally most frequent next character for every position.
+
+The model predicted `a` after `l`, `n` after `r`, `t` after a space, and `e` after `t` for the inspected contexts.
+
+Starting from `larry`, greedy generation produced a repetitive sequence resembling `larry te te te...`.
+
+### Findings
+
+**1. Character-pair counts provide a usable next-character predictor.**
+
+The model learned a conditional distribution from observed adjacent characters and used it to make predictions.
+
+**2. The model outperformed the simple baseline on the training corpus.**
+
+Training accuracy was 49.5%, compared with 13.3% for the most-common-character baseline. This shows that the preceding character carries useful information for predicting the next character in this corpus.
+
+**3. Greedy generation can become repetitive.**
+
+The generated text repeatedly cycled through a short character pattern. Choosing only the most frequent next character can trap generation in predictable loops rather than produce varied text.
+
+**4. One-character context is limited.**
+
+The model conditions its prediction on only the immediately preceding character. It cannot directly distinguish contexts that share the same last character but have different earlier characters.
+
+**5. This is still a statistical model, not a neural network.**
+
+The transition table is learned by counting occurrences. No trainable neural-network parameters or gradient-based optimization are involved.
+
+### Limitations
+
+The corpus contains only 106 characters and was written specifically for this experiment.
+
+The model was evaluated on the same text used to build its transition counts. The reported accuracy is training accuracy, not a measurement of generalization to unseen text.
+
+Greedy generation can produce repetitive output. The experiment does not evaluate alternative sampling methods, longer contexts, or larger corpora.
+
+The unknown-token fallback provides a probability distribution for contexts without recorded transitions, but it does not recover the identity of an unseen character.
+
+### Conclusion
+
+Experiment 079 established a working character bigram model for Larry. It learns adjacent-character frequencies, produces normalized next-character probabilities, predicts individual characters, and generates text.
+
+Its training accuracy exceeded the most-common-character baseline on the small corpus. However, its repetitive output and one-character context reveal important limitations.
+
+The next step should test whether using more preceding characters improves next-character prediction. Evaluation should separate training examples from held-out examples so that improvement is not judged solely on data already used to build the model.
+
+### Status
+
+**Experiment 079 complete.** All five tests passed. Training accuracy was 49.5%, compared with 13.3% for the baseline. Generalization to unseen text has not been measured.
