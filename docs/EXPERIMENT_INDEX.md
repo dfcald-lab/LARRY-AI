@@ -114,6 +114,7 @@ Begin building the components Larry needs to learn from text.
 
 - [078 — Character Tokenization](../experiments/078_character_tokenization/) — Converts characters into deterministic integer IDs, reconstructs known text, and handles unknown characters. All five tests passed.
 - [079 — Character Bigram Model](../experiments/079_character_bigram_model/) — Learns next-character probabilities from adjacent-character counts. Achieved 49.5% training accuracy versus 13.3% for the most-common-character baseline; generalization remains untested.
+- [080 — Context Length Comparison](../experiments/080_context_length_comparison/) — Compares character contexts of lengths 1, 2, and 3 on held-out text. The three-character model reached 83.0% accuracy on this small test set.
 
 ## How to Use This Index
 

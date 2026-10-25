@@ -8393,3 +8393,93 @@ The next step should test whether using more preceding characters improves next-
 ### Status
 
 **Experiment 079 complete.** All five tests passed. Training accuracy was 49.5%, compared with 13.3% for the baseline. Generalization to unseen text has not been measured.
+
+## Experiment 080 — Context Length Comparison
+
+### Research Question
+
+Does using more preceding characters improve next-character prediction compared with a one-character context and a most-common-character baseline?
+
+### Setup
+
+Three character context models were compared:
+
+- Context 1: uses the immediately preceding character.
+- Context 2: can use the two preceding characters.
+- Context 3: can use the three preceding characters.
+
+The models learn transition counts from 10 training sentences containing 223 characters. Evaluation uses five separate held-out sentences and 106 next-character targets.
+
+The character vocabulary was built from the training sentences only. All characters in the held-out sentences were present in that vocabulary.
+
+When a context was not observed during training, the model backed off to progressively shorter contexts. If no preceding context was available, it used global next-character frequencies.
+
+The baseline always predicts the globally most frequent next character in the training sequences.
+
+### Tests
+
+Six checks were performed:
+
+1. All held-out characters exist in the training vocabulary.
+2. Training and held-out sentences are separate.
+3. Training transition counts are complete.
+4. Next-character probabilities sum to one.
+5. The global fallback works without a preceding context.
+6. Predictions use valid vocabulary IDs.
+
+All six tests passed.
+
+### Results
+
+| Model | Correct predictions | Held-out accuracy |
+|---|---:|---:|
+| Most-common-character baseline | 11/106 | 10.4% |
+| Context 1 | 40/106 | 37.7% |
+| Context 2 | 81/106 | 76.4% |
+| Context 3 | 88/106 | 83.0% |
+
+The context-1 model used a one-character context for all 106 predictions.
+
+The context-2 model used a two-character context for 101 predictions and backed off to one character for 5.
+
+The context-3 model used a three-character context for 93 predictions, a two-character context for 8, and a one-character context for 5.
+
+### Findings
+
+**1. Longer context improved accuracy in this test.**
+
+Accuracy rose from 37.7% with one-character context to 76.4% with two-character context and 83.0% with three-character context.
+
+**2. The baseline was substantially less accurate.**
+
+The most-common-character baseline achieved 10.4%, below all three context models. The preceding characters therefore supplied useful predictive information for these held-out sentences.
+
+**3. Backoff allowed the models to handle unseen contexts.**
+
+The longer-context models could still make predictions when an entire context had not appeared in training, by trying a shorter context.
+
+**4. The improvement from two to three characters was smaller than the improvement from one to two.**
+
+The measured increase was 6.6 percentage points from context 2 to context 3, compared with 38.7 percentage points from context 1 to context 2.
+
+**5. This is evidence about a small dataset, not general language performance.**
+
+The corpus is small and hand-written. The training and held-out sentences are distinct, but the sentences share vocabulary and may share character patterns. The experiment does not establish performance on unrelated or naturally occurring text.
+
+### Limitations
+
+Only 10 training sentences and five held-out sentences were used. The 106 prediction targets are not independent examples because multiple targets come from the same sentences.
+
+The experiment uses a fixed character vocabulary and count-based statistical models. It does not train neural-network parameters, use embeddings, or learn representations.
+
+The measured accuracy depends on the chosen corpus and held-out sentences. A broader evaluation across larger and more varied text is needed.
+
+### Conclusion
+
+Experiment 080 found that increasing the available character context improved held-out next-character accuracy on this small dataset. The three-character model achieved 83.0%, compared with 76.4% for context 2, 37.7% for context 1, and 10.4% for the baseline.
+
+The results support investigating longer context, but they do not establish that three characters is generally optimal. The next step should examine model performance on a larger corpus and strengthen the evaluation before increasing model complexity.
+
+### Status
+
+**Experiment 080 complete.** All six tests passed. The best measured result was 88/106 correct predictions (83.0%) with a maximum context of three characters. Generalization beyond this small held-out set remains uncertain.
