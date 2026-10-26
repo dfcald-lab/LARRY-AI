@@ -117,6 +117,7 @@ Begin building the components Larry needs to learn from text.
 - [080 — Context Length Comparison](../experiments/080_context_length_comparison/) — Compares character contexts of lengths 1, 2, and 3 on held-out text. The three-character model reached 83.0% accuracy on this small test set.
 - [081 — Larger Text Corpus](../experiments/081_larger_text_corpus/) — Compares character contexts 1, 2, and 3 on 572 held-out targets. Context 3 achieved 56.6% accuracy; broader generalization remains untested.
 - [082 — Public-Domain Text](../experiments/082_public_domain_text/) — Evaluates character contexts 1, 2, and 3 on later chapters of Alice's Adventures in Wonderland. Context 3 achieved 53.11% accuracy across 44,362 held-out targets. Input text is kept local.
+- [083 — Neural Character Language Model](../experiments/083_neural_character_model/) — Trains a 24-neuron ReLU network with softmax, cross-entropy, backpropagation, and gradient descent. Reached 26.98% held-out accuracy versus 30.64% for the count-based context-1 model. Gradient check passed.
 
 ## How to Use This Index
 

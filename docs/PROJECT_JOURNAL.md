@@ -8690,3 +8690,116 @@ The next stage should investigate a trainable neural model rather than continuin
 ### Status
 
 **Experiment 082 complete.** The data-preparation check passed, all nine model checks passed, and context 3 achieved 23,560/44,362 correct predictions (53.11%). The input text remains local and is excluded from Git.
+
+## Experiment 083 — Neural Character Language Model
+
+### Research Question
+
+Can Larry use its existing neural-network components to learn next-character predictions through trainable weights, softmax, cross-entropy loss, backpropagation, and gradient descent?
+
+### Setup
+
+The experiment uses the locally prepared text from Experiment 082.
+
+Training data comes from Chapters I–VIII of *Alice's Adventures in Wonderland*. Evaluation uses Chapters IX–XII. The vocabulary is created from training text only.
+
+The network has three stages:
+
+- Input: a 71-value one-hot character representation.
+- Hidden layer: 24 ReLU neurons.
+- Output layer: 71 linear scores, converted to probabilities with softmax.
+
+The target is the character that follows the input character. Training uses cross-entropy loss and full-batch gradient descent for 200 epochs at a learning rate of 0.5.
+
+Occurrences sharing the same preceding character are aggregated by their target counts. This preserves the full-batch gradient while avoiding redundant forward and backward passes for identical inputs.
+
+The model reuses the existing `Neuron`, `Layer`, and `Network` implementations. Softmax, cross-entropy evaluation, gradient aggregation, and the model experiment are implemented separately.
+
+### Tests
+
+Eight checks passed:
+
+1. Training and held-out data are present.
+2. All held-out characters exist in the training vocabulary.
+3. Softmax probabilities sum to one.
+4. Backpropagation agrees with a numerical finite-difference gradient.
+5. All trained parameters remain finite.
+6. Training cross-entropy decreases.
+7. Every held-out target is evaluated.
+8. Neural predictions use valid vocabulary IDs.
+
+The numerical gradient check reported matching analytic and numerical values of approximately -0.221262.
+
+### Results
+
+| Measurement | Result |
+|---|---:|
+| Vocabulary size, including unknown token | 70 |
+| Training targets | 95,939 |
+| Held-out targets | 44,362 |
+| Hidden neurons | 24 |
+| Training epochs | 200 |
+| Learning rate | 0.5 |
+| Initial training cross-entropy | 4.2414 |
+| Final training cross-entropy | 2.7008 |
+| Held-out cross-entropy | 2.7414 |
+| Training accuracy | 27.11% |
+| Neural held-out accuracy | 26.98% |
+| Most-common-character baseline | 17.69% |
+| Count-based context-1 accuracy | 30.64% |
+
+The count-based context-1 reference achieved 13,593 correct predictions out of 44,362. The neural model achieved 11,968 correct predictions out of 44,362.
+
+The neural model therefore exceeded the most-common-character baseline but did not match the count-based context-1 model.
+
+Greedy generation starting with `Alice ` produced a repetitive sequence beginning `Alice t t t...`.
+
+### Findings
+
+**1. The neural training pipeline works.**
+
+The model completed 200 gradient-descent epochs. Training cross-entropy decreased from 4.2414 to 2.7008, and all parameters remained finite.
+
+**2. The gradient check supports the backpropagation implementation.**
+
+The tested analytic gradient matched the numerical finite-difference estimate. This validates that tested gradient calculation, but it does not by itself prove every training component is correct.
+
+**3. The neural model beats the simplest baseline but not the stronger count-based reference.**
+
+Held-out accuracy was 26.98%, above the 17.69% most-common-character baseline. However, the count-based context-1 model reached 30.64%.
+
+The neural model has therefore not yet demonstrated an accuracy advantage over the simpler statistical approach.
+
+**4. Lower training loss does not guarantee better held-out accuracy.**
+
+The model learned useful weights, but the measured next-character accuracy remained below the count-based reference. Loss and accuracy measure different aspects of predictive performance.
+
+**5. Greedy generation remains repetitive.**
+
+The generated sample repeatedly selected a common character transition. The model's output behavior remains limited despite successful training.
+
+### Limitations
+
+The network sees only the immediately preceding character. It does not directly represent a longer sequence of prior characters.
+
+The model has one small hidden layer and was trained with a fixed learning rate for 200 epochs. The experiment does not establish that these choices are optimal.
+
+Evaluation uses later chapters of one book. The results do not establish performance on unrelated books or broader language data.
+
+The model uses greedy next-character prediction for its sample. Alternative sampling strategies were not evaluated.
+
+The text remains local and is not included in the Git commit. Reproducing the experiment requires the original text file and the Experiment 082 data-preparation step.
+
+### Conclusion
+
+Experiment 083 established Larry's first trainable neural character model using the existing neural-network code.
+
+The numerical gradient check passed, training cross-entropy decreased from 4.2414 to 2.7008, and the neural model reached 26.98% held-out accuracy.
+
+The result exceeded the most-common-character baseline but remained below the count-based context-1 model's 30.64%. Repetitive greedy generation also remains unresolved.
+
+The next experiment should investigate why this small neural model underperforms the count-based reference. The goal is to improve the neural model through a controlled change and compare it using the same training and held-out data, rather than assuming that adding more training automatically makes it better.
+
+### Status
+
+**Experiment 083 complete.** All eight checks passed. Neural held-out accuracy was 26.98%, compared with 30.64% for the count-based context-1 model and 17.69% for the most-common-character baseline. The model trains successfully, but an accuracy advantage over the count-based reference has not been demonstrated.
