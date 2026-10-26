@@ -8803,3 +8803,108 @@ The next experiment should investigate why this small neural model underperforms
 ### Status
 
 **Experiment 083 complete.** All eight checks passed. Neural held-out accuracy was 26.98%, compared with 30.64% for the count-based context-1 model and 17.69% for the most-common-character baseline. The model trains successfully, but an accuracy advantage over the count-based reference has not been demonstrated.
+
+## Experiment 084 — Neural Training Duration
+
+### Research Question
+
+Does extending training from 200 to 800 epochs improve the neural character model's held-out performance, or does the model begin to overfit?
+
+### Setup
+
+Experiment 084 is based on the neural character model from Experiment 083. It uses the same local text prepared by Experiment 082, the same training and held-out chapters, the same network architecture, and the same initialization.
+
+The controlled settings are:
+
+- Input: 70-value one-hot character representation.
+- Hidden layer: 24 ReLU neurons.
+- Output layer: 70 linear scores followed by softmax.
+- Learning rate: 0.5.
+- Random seed: 8301.
+- Maximum training duration: 800 full-batch gradient-descent epochs.
+
+Performance was measured at 200, 400, 600, and 800 epochs during one continuous training run. This avoids introducing a new initialization at each checkpoint.
+
+### Tests
+
+The same eight validation checks from Experiment 083 passed:
+
+1. Training and held-out data are present.
+2. All held-out characters exist in the training vocabulary.
+3. Softmax probabilities sum to one.
+4. Backpropagation matches a numerical finite-difference gradient.
+5. All trained parameters remain finite.
+6. Training cross-entropy decreases.
+7. Every held-out target is evaluated.
+8. Neural predictions use valid vocabulary IDs.
+
+The analytic and numerical gradient estimates both measured approximately -0.221262.
+
+### Results
+
+| Epoch | Training loss | Training accuracy | Held-out loss | Held-out accuracy |
+|---:|---:|---:|---:|---:|
+| 200 | 2.7008 | 27.11% | 2.7414 | 26.98% |
+| 400 | 2.5773 | 28.66% | 2.6204 | 29.15% |
+| 600 | 2.5256 | 28.91% | 2.5676 | 29.37% |
+| 800 | 2.4913 | 29.03% | 2.5303 | 29.49% |
+
+The initial training cross-entropy was 4.2414.
+
+At 800 epochs, the model achieved 13,084 correct held-out predictions out of 44,362, or 29.49%.
+
+The comparison models at this evaluation point were:
+
+| Model | Held-out accuracy |
+|---|---:|
+| Most-common-character baseline | 17.69% |
+| Count-based context-1 model | 30.64% |
+| Neural model at 800 epochs | 29.49% |
+
+Greedy generation from the prefix `Alice ` remained repetitive, producing text beginning `Alice the the the...`.
+
+### Findings
+
+**1. Longer training improved held-out accuracy.**
+
+Accuracy increased from 26.98% at epoch 200 to 29.49% at epoch 800, an improvement of 2.51 percentage points.
+
+**2. Training and held-out loss both continued to decrease.**
+
+Training loss fell from 2.7008 at epoch 200 to 2.4913 at epoch 800. Held-out loss fell from 2.7414 to 2.5303 over the same interval.
+
+There was no sign of overfitting in the measured checkpoints. This does not guarantee that further training will continue to improve performance.
+
+**3. Improvement became smaller at later checkpoints.**
+
+Held-out accuracy increased by 2.17 percentage points from epoch 200 to 400, by 0.22 points from 400 to 600, and by 0.12 points from 600 to 800.
+
+The model continued to improve, but the gains diminished over the tested interval.
+
+**4. The neural model nearly matched the count-based reference.**
+
+At 800 epochs, neural accuracy was 29.49%, compared with 30.64% for the count-based context-1 model. The neural model remained 1.15 percentage points behind.
+
+**5. Longer training did not solve repetitive generation.**
+
+The greedy sample continued repeating a common short pattern. Predictive accuracy and generated-text quality are related but distinct evaluation questions.
+
+### Limitations
+
+The experiment used one random initialization, one learning rate, and one model architecture. The results do not establish whether the same trend occurs across different seeds or hyperparameters.
+
+Only four checkpoints were evaluated, with the final one at 800 epochs. There is no evidence here about performance beyond that point.
+
+The evaluation uses later chapters of one book. It does not establish general performance on unrelated text.
+
+The model uses only the preceding character and remains a small feed-forward network rather than a transformer.
+
+### Conclusion
+
+Experiment 084 found that extending training from 200 to 800 epochs improved held-out next-character accuracy from 26.98% to 29.49%. Training and held-out cross-entropy continued to decrease throughout the measured checkpoints, with diminishing accuracy gains and no observed overfitting.
+
+The neural model nearly matched, but did not surpass, the count-based context-1 reference at 30.64%. Further training may yield additional gains, but the next experiment should investigate a more informative input representation or another controlled improvement rather than assuming that more epochs alone will close the gap.
+
+### Status
+
+**Experiment 084 complete.** All eight validation checks passed. The best measured neural held-out accuracy was 29.49% at 800 epochs, compared with 30.64% for the count-based reference. No overfitting was observed within the tested checkpoints.
