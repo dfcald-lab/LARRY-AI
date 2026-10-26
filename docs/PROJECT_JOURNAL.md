@@ -8908,3 +8908,107 @@ The neural model nearly matched, but did not surpass, the count-based context-1 
 ### Status
 
 **Experiment 084 complete.** All eight validation checks passed. The best measured neural held-out accuracy was 29.49% at 800 epochs, compared with 30.64% for the count-based reference. No overfitting was observed within the tested checkpoints.
+
+## Experiment 085 — Neural Two-Character Context
+
+### Research Question
+
+Does giving Larry's neural character model two preceding characters instead of one improve next-character prediction on held-out text?
+
+### Setup
+
+The experiment uses the locally prepared text from Experiment 082: Chapters I–VIII of *Alice's Adventures in Wonderland* for training and Chapters IX–XII for held-out evaluation.
+
+Both neural models use the same vocabulary and target positions. The first receives one preceding character; the second receives the preceding two characters. Each character is represented by a one-hot vector. For the two-character model, the input is the concatenation of two one-hot vectors.
+
+Both models use a 24-neuron ReLU hidden layer, 70 output scores, softmax, cross-entropy, full-batch gradient descent, a learning rate of 0.5, and 200 epochs. Separate deterministic initialization seeds are used for the two architectures.
+
+To make the comparison use the same target positions, both models begin predicting at the third character of each paragraph. Counts are aggregated by observed context and target, preserving the full-batch gradient.
+
+The evaluation compares both neural models with a most-common-character baseline and count-based context-1 and context-2 models. The count-based context-2 model backs off to context 1 when a two-character context is unseen, then to global target frequencies if needed.
+
+### Tests
+
+Ten validation checks passed:
+
+1. Training and held-out data are present.
+2. All held-out characters exist in the training vocabulary.
+3. Both count models use the same training targets.
+4. Target totals match paragraph-local counting.
+5. Softmax probabilities sum to one.
+6. Two-character backpropagation matches a numerical finite-difference gradient.
+7. All trained parameters remain finite.
+8. Both neural models reduce training cross-entropy.
+9. Both neural models evaluate every held-out target.
+10. Neural predictions use valid vocabulary IDs.
+
+The two-character gradient check produced matching analytic and numerical values of approximately -0.0309488.
+
+### Results
+
+The vocabulary contains 70 entries, including the unknown token.
+
+| Measurement | Result |
+|---|---:|
+| Training targets | 95,459 |
+| Held-out targets | 44,045 |
+| Distinct training contexts, context 1 | 69 |
+| Distinct training contexts, context 2 | 1,009 |
+| Training epochs per neural model | 200 |
+| Learning rate | 0.5 |
+
+| Model | Correct held-out predictions | Held-out accuracy | Held-out cross-entropy |
+|---|---:|---:|---:|
+| Most-common-character baseline | 7,846/44,045 | 17.81% | Not measured |
+| Count-based context 1 | 13,498/44,045 | 30.65% | Not measured |
+| Count-based context 2 with backoff | 19,460/44,045 | 44.18% | Not measured |
+| Neural context 1 | 11,963/44,045 | 27.16% | 2.7218 |
+| Neural context 2 | 13,964/44,045 | 31.70% | 2.6117 |
+
+The neural context-1 model reached 27.23% training accuracy with training cross-entropy of 2.6890.
+
+The neural context-2 model reached 31.57% training accuracy with training cross-entropy of 2.5823.
+
+### Findings
+
+**1. Two-character input improved neural held-out accuracy.**
+
+The neural model increased from 27.16% accuracy with one-character input to 31.70% with two-character input, a gain of 4.54 percentage points.
+
+**2. The neural context-2 model surpassed the count-based context-1 model.**
+
+Neural context 2 reached 31.70%, compared with 30.65% for count-based context 1. This is the first tested neural model in this sequence to exceed that count-based reference on these target positions.
+
+**3. The count-based context-2 model remained substantially better.**
+
+The count-based model achieved 44.18%, compared with 31.70% for neural context 2. Directly counting observed character-pair transitions remains a stronger reference on this dataset.
+
+**4. Both neural models learned useful weights.**
+
+Both models reduced training cross-entropy, kept parameters finite, and passed the validation checks. The numerical gradient check supports the tested backpropagation calculation.
+
+**5. The additional context helped, but did not solve generation quality.**
+
+This experiment measures next-character prediction accuracy. It does not establish semantic understanding or demonstrate that generated text will be coherent.
+
+### Limitations
+
+The models use one small hidden layer, one random initialization per architecture, and 200 epochs. The experiment does not compare multiple seeds or tune hyperparameters.
+
+The data comes from later chapters of one book, so these results do not establish performance on unrelated text.
+
+The two neural architectures have different input dimensions and separate initializations. The measured difference is evidence for the tested configurations, not a universal estimate of the effect of context length.
+
+The count-based models have direct access to observed context frequencies and remain strong baselines.
+
+### Conclusion
+
+Experiment 085 found that changing the neural input from one preceding character to two improved held-out accuracy from 27.16% to 31.70%.
+
+The neural context-2 model surpassed the count-based context-1 model at 30.65%, but it remained below the count-based context-2 model at 44.18%.
+
+The results support continuing to improve the neural model's ability to learn from context. A useful next experiment should keep the evaluation target positions fixed and investigate a controlled change to training or model capacity, rather than assuming that adding more context alone will match the count-based model.
+
+### Status
+
+**Experiment 085 complete.** All ten validation checks passed. Neural context 2 reached 13,964/44,045 correct held-out predictions (31.70%), compared with 27.16% for neural context 1 and 44.18% for the count-based context-2 model.
